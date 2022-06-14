@@ -43,6 +43,7 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.recyclerview.widget.DefaultItemAnimator;
@@ -131,6 +132,8 @@ public class ScanFragment extends Fragment implements XsensDotScannerCallback, S
         super.onCreateView(inflater, container, savedInstanceState);
 
         mBinding = FragmentScanBinding.inflate(LayoutInflater.from(getContext()));
+        mBinding.toolbar.setTitle(getString(R.string.title_scan));
+        ((AppCompatActivity) getActivity()).setSupportActionBar(mBinding.toolbar);
         return mBinding.getRoot();
     }
 
