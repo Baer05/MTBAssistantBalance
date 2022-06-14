@@ -187,7 +187,7 @@ public class HomeActivity extends AppCompatActivity {
         if (mIsScanning) scanItem.setTitle(getString(R.string.menu_stop_scan));
         else scanItem.setTitle(getString(R.string.menu_start_scan));
 
-        final boolean isStreaming = Boolean.TRUE.equals(mSensorViewModel.isStreaming().getValue());
+        final boolean isStreaming = mSensorViewModel.isStreaming().getValue();
         if (isStreaming) streamingItem.setTitle(getString(R.string.menu_stop_streaming));
         else streamingItem.setTitle(getString(R.string.menu_start_streaming));
 
@@ -231,7 +231,7 @@ public class HomeActivity extends AppCompatActivity {
             case R.id.action_measure:
                 // Change to DataFragment and put ScanFragment to the back stack.
                 Fragment dataFragment = DataFragment.newInstance();
-                addFragment(dataFragment);
+                addFragment(dataFragment, FRAGMENT_TAG_DATA);
                 break;
         }
 
@@ -253,9 +253,8 @@ public class HomeActivity extends AppCompatActivity {
      *  @param fragment The instance of fragment
      *
      */
-    private void addFragment(Fragment fragment) {
-
-        getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, HomeActivity.FRAGMENT_TAG_DATA).addToBackStack(null).commit();
+    private void addFragment(Fragment fragment, String tag) {
+        getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, tag).addToBackStack(null).commit();
     }
 
     /**
