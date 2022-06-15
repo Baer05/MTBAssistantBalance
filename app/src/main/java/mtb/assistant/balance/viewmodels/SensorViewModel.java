@@ -63,26 +63,12 @@ import static com.xsens.dot.android.sdk.models.XsensDotDevice.CONN_STATE_RECONNE
 public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback {
 
     private static final String TAG = SensorViewModel.class.getSimpleName();
-
-    /**
-     * Get the instance of SensorViewModel
-     *
-     * @param owner The life cycle owner from activity/fragment
-     * @return The SensorViewModel
-     */
-    public static SensorViewModel getInstance(@NonNull ViewModelStoreOwner owner) {
-
-        return new ViewModelProvider(owner, new ViewModelProvider.NewInstanceFactory()).get(SensorViewModel.class);
-    }
-
     // A variable to queue multiple threads.
     private static final Object LOCKER = new Object();
-
     // A callback function to notify battery information
     private BatteryChangedInterface mBatteryChangeInterface;
     // A callback function to notify data changes event
     private DataChangeInterface mDataChangeInterface;
-
     // A list contains XsensDotDevice
     private MutableLiveData<ArrayList<XsensDotDevice>> mSensorList = new MutableLiveData<>();
     // A variable to notify the connection state
@@ -93,12 +79,21 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
     private MutableLiveData<Boolean> mIsStreaming = new MutableLiveData<>();
 
     /**
+     * Get the instance of SensorViewModel
+     *
+     * @param owner The life cycle owner from activity/fragment
+     * @return The SensorViewModel
+     */
+    public static SensorViewModel getInstance(@NonNull ViewModelStoreOwner owner) {
+        return new ViewModelProvider(owner, new ViewModelProvider.NewInstanceFactory()).get(SensorViewModel.class);
+    }
+
+    /**
      * Initialize data changes interface.
      *
      * @param callback The class which implemented DataChangeInterface
      */
     public void setDataChangeCallback(DataChangeInterface callback) {
-
         mDataChangeInterface = callback;
     }
 
@@ -108,7 +103,6 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
      * @param callback The class which implemented setBatteryChangedCallback
      */
     public void setBatteryChangedCallback(BatteryChangedInterface callback) {
-
         mBatteryChangeInterface = callback;
     }
 
@@ -119,17 +113,12 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
      * @return The XsensDotDevice object
      */
     public XsensDotDevice getSensor(String address) {
-
         final ArrayList<XsensDotDevice> devices = mSensorList.getValue();
-
         if (devices != null) {
-
             for (XsensDotDevice device : devices) {
-
                 if (device.getAddress().equals(address)) return device;
             }
         }
-
         return null;
     }
 
@@ -139,7 +128,6 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
      * @return The list contains all devices
      */
     public ArrayList<XsensDotDevice> getAllSensors() {
-
         if (mSensorList.getValue() == null) return new ArrayList<>();
         else return mSensorList.getValue();
     }
@@ -151,7 +139,6 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
      * @param device  The scanned Bluetooth device
      */
     public void connectSensor(Context context, BluetoothDevice device) {
-
         XsensDotDevice xsDevice = new XsensDotDevice(context, device, this);
         addDevice(xsDevice);
         xsDevice.connect();
@@ -163,13 +150,9 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
      * @param address The mac address of device
      */
     public void disconnectSensor(String address) {
-
         if (mSensorList.getValue() != null) {
-
             for (XsensDotDevice device : mSensorList.getValue()) {
-
                 if (device.getAddress().equals(address)) {
-
                     device.disconnect();
                     break;
                 }
@@ -181,14 +164,10 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
      * Disconnect all devices which are exist in the list.
      */
     public void disconnectAllSensors() {
-
         if (mSensorList.getValue() != null) {
-
             synchronized (LOCKER) {
-
-                for (Iterator<XsensDotDevice> it = mSensorList.getValue().iterator(); it.hasNext(); ) {
+                for (XsensDotDevice device : mSensorList.getValue()) {
                     // Use Iterator to make sure it's thread safety.
-                    XsensDotDevice device = it.next();
                     device.disconnect();
                 }
             }
@@ -201,13 +180,9 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
      * @param address The mac address of device
      */
     public void cancelReconnection(String address) {
-
         if (mSensorList.getValue() != null) {
-
             for (XsensDotDevice device : mSensorList.getValue()) {
-
                 if (device.getAddress().equals(address)) {
-
                     device.cancelReconnecting();
                     break;
                 }
@@ -221,22 +196,15 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
      * @return True - If all sensors are connected
      */
     public boolean checkConnection() {
-
         final ArrayList<XsensDotDevice> devices = mSensorList.getValue();
-
         if (devices != null) {
-
             for (XsensDotDevice device : devices) {
-
                 final int state = device.getConnectionState();
                 if (state != CONN_STATE_CONNECTED) return false;
             }
-
         } else {
-
             return false;
         }
-
         return true;
     }
 
@@ -247,15 +215,11 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
      * @return The tag name
      */
     public String getTag(String address) {
-
         XsensDotDevice device = getSensor(address);
-
         if (device != null) {
-
             String tag = device.getTag();
             return tag == null ? device.getName() : tag;
         }
-
         return "";
     }
 
@@ -266,13 +230,9 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
      * @param log  The log state
      */
     public void setStates(int plot, int log) {
-
         final ArrayList<XsensDotDevice> devices = mSensorList.getValue();
-
         if (devices != null) {
-
             for (XsensDotDevice device : devices) {
-
                 device.setPlotState(plot);
                 device.setLogState(log);
             }
@@ -285,13 +245,9 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
      * @param mode The measurement mode
      */
     public void setMeasurementMode(int mode) {
-
         final ArrayList<XsensDotDevice> devices = mSensorList.getValue();
-
         if (devices != null) {
-
             for (XsensDotDevice device : devices) {
-
                 device.setMeasurementMode(mode);
             }
         }
@@ -303,9 +259,7 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
      * @param isRoot True - If set to root
      */
     public void setRootDevice(boolean isRoot) {
-
         final ArrayList<XsensDotDevice> devices = mSensorList.getValue();
-
         if (devices != null && devices.size() > 0) devices.get(0).setRootDevice(isRoot);
     }
 
@@ -315,13 +269,9 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
      * @param enabled True - Start outputting data
      */
     public void setMeasurement(boolean enabled) {
-
         final ArrayList<XsensDotDevice> devices = mSensorList.getValue();
-
         if (devices != null) {
-
             for (XsensDotDevice device : devices) {
-
                 if (enabled) device.startMeasuring();
                 else device.stopMeasuring();
             }
@@ -334,21 +284,15 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
      * @param xsDevice The XsensDotDevice object
      */
     private void addDevice(XsensDotDevice xsDevice) {
-
         if (mSensorList.getValue() == null) mSensorList.setValue(new ArrayList<XsensDotDevice>());
-
         final ArrayList<XsensDotDevice> devices = mSensorList.getValue();
         boolean isExist = false;
-
         for (XsensDotDevice _xsDevice : devices) {
-
             if (xsDevice.getAddress().equals(_xsDevice.getAddress())) {
-
                 isExist = true;
                 break;
             }
         }
-
         if (!isExist) devices.add(xsDevice);
     }
 
@@ -358,20 +302,16 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
      * @param address The mac address of device
      */
     public void removeDevice(String address) {
-
         if (mSensorList.getValue() == null) {
-
             mSensorList.setValue(new ArrayList<XsensDotDevice>());
             return;
         }
 
         synchronized (LOCKER) {
-
             for (Iterator<XsensDotDevice> it = mSensorList.getValue().iterator(); it.hasNext(); ) {
                 // Use Iterator to make sure it's thread safety.
                 XsensDotDevice device = it.next();
                 if (device.getAddress().equals(address)) {
-
                     it.remove();
                     break;
                 }
@@ -383,11 +323,8 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
      * Remove all sensor from device list directly.
      */
     public void removeAllDevice() {
-
         if (mSensorList.getValue() != null) {
-
             synchronized (LOCKER) {
-
                 mSensorList.getValue().clear();
             }
         }
@@ -399,7 +336,6 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
      * @return The latest updated device
      */
     public MutableLiveData<XsensDotDevice> getConnectionChangedDevice() {
-
         return mConnectionChangedSensor;
     }
 
@@ -409,7 +345,6 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
      * @return The latest updated device
      */
     public MutableLiveData<XsensDotDevice> getTagChangedDevice() {
-
         return mTagChangedSensor;
     }
 
@@ -419,7 +354,6 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
      * @return The latest streaming status
      */
     public MutableLiveData<Boolean> isStreaming() {
-
         if (mIsStreaming.getValue() == null) mIsStreaming.setValue(false);
         return mIsStreaming;
     }
@@ -430,50 +364,34 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
      * @param status The status of streaming
      */
     public void updateStreamingStatus(boolean status) {
-
         mIsStreaming.postValue(status);
     }
 
     @Override
     public void onXsensDotConnectionChanged(String address, int state) {
-
         Log.i(TAG, "onXsensDotConnectionChanged() - address = " + address + ", state = " + state);
-
         final XsensDotDevice xsDevice = getSensor(address);
         if (xsDevice != null) mConnectionChangedSensor.postValue(xsDevice);
-
         switch (state) {
-
             case CONN_STATE_DISCONNECTED:
-
                 synchronized (this) {
                     removeDevice(address);
                 }
                 break;
-
             case CONN_STATE_CONNECTING:
-
-                break;
-
-            case CONN_STATE_CONNECTED:
-
-                break;
-
             case CONN_STATE_RECONNECTING:
-
+            case CONN_STATE_CONNECTED:
                 break;
         }
     }
 
     @Override
     public void onXsensDotServicesDiscovered(String address, int status) {
-
         Log.i(TAG, "onXsensDotServicesDiscovered() - address = " + address + ", status = " + status);
     }
 
     @Override
     public void onXsensDotFirmwareVersionRead(String address, String version) {
-
         Log.i(TAG, "onXsensDotFirmwareVersionRead() - address = " + address + ", version = " + version);
     }
 
@@ -481,10 +399,8 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
     public void onXsensDotTagChanged(String address, String tag) {
         // This callback function will be triggered in the connection precess.
         Log.i(TAG, "onXsensDotTagChanged() - address = " + address + ", tag = " + tag);
-
         // The default value of tag is an empty string.
         if (!tag.equals("")) {
-
             XsensDotDevice device = getSensor(address);
             if (device != null) mTagChangedSensor.postValue(device);
         }
@@ -494,7 +410,6 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
     public void onXsensDotBatteryChanged(String address, int status, int percentage) {
         // This callback function will be triggered in the connection precess.
         Log.i(TAG, "onXsensDotBatteryChanged() - address = " + address + ", status = " + status + ", percentage = " + percentage);
-
         // The default value of status and percentage is -1.
         if (status != -1 && percentage != -1) {
             // Use callback function instead of LiveData to notify the battery information.
@@ -506,9 +421,7 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
 
     @Override
     public void onXsensDotDataChanged(String address, XsensDotData data) {
-
         Log.i(TAG, "onXsensDotDataChanged() - address = " + address);
-
         // Don't use LiveData variable to transfer data to activity/fragment.
         // The main (UI) thread isn't fast enough to store data by 60Hz.
         if (mDataChangeInterface != null) mDataChangeInterface.onDataChanged(address, data);
@@ -516,49 +429,41 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
 
     @Override
     public void onXsensDotInitDone(String address) {
-
         Log.i(TAG, "onXsensDotInitDone() - address = " + address);
     }
 
     @Override
     public void onXsensDotButtonClicked(String address, long timestamp) {
-
         Log.i(TAG, "onXsensDotButtonClicked() - address = " + address + ", timestamp = " + timestamp);
     }
 
     @Override
     public void onXsensDotPowerSavingTriggered(String address) {
-
         Log.i(TAG, "onXsensDotPowerSavingTriggered() - address = " + address);
     }
 
     @Override
     public void onReadRemoteRssi(String address, int rssi) {
-
         Log.i(TAG, "onReadRemoteRssi() - address = " + address + ", rssi = " + rssi);
     }
 
     @Override
     public void onXsensDotOutputRateUpdate(String address, int outputRate) {
-
         Log.i(TAG, "onXsensDotOutputRateUpdate() - address = " + address + ", outputRate = " + outputRate);
     }
 
     @Override
     public void onXsensDotFilterProfileUpdate(String address, int filterProfileIndex) {
-
         Log.i(TAG, "onXsensDotFilterProfileUpdate() - address = " + address + ", filterProfileIndex = " + filterProfileIndex);
     }
 
     @Override
     public void onXsensDotGetFilterProfileInfo(String address, ArrayList<FilterProfileInfo> filterProfileInfoList) {
-
         Log.i(TAG, "onXsensDotGetFilterProfileInfo() - address = " + address + ", size = " + filterProfileInfoList.size());
     }
 
     @Override
     public void onSyncStatusUpdate(String address, boolean isSynced) {
-
         Log.i(TAG, "onSyncStatusUpdate() - address = " + address + ", isSynced = " + isSynced);
     }
 }

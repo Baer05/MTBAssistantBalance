@@ -43,6 +43,10 @@ import androidx.lifecycle.ViewModelStoreOwner;
 public class BluetoothViewModel extends ViewModel {
 
     private static final String TAG = BluetoothViewModel.class.getSimpleName();
+    // A variable to notify the Bluetooth status
+    private MutableLiveData<Boolean> mIsBluetoothEnabled = new MutableLiveData<>();
+    // A variable to notify the scanning status
+    private MutableLiveData<Boolean> mIsScanning = new MutableLiveData<>();
 
     /**
      * Get the instance of BluetoothViewModel
@@ -51,14 +55,8 @@ public class BluetoothViewModel extends ViewModel {
      * @return The BluetoothViewModel
      */
     public static BluetoothViewModel getInstance(@NonNull ViewModelStoreOwner owner) {
-
         return new ViewModelProvider(owner, new ViewModelProvider.NewInstanceFactory()).get(BluetoothViewModel.class);
     }
-
-    // A variable to notify the Bluetooth status
-    private MutableLiveData<Boolean> mIsBluetoothEnabled = new MutableLiveData<>();
-    // A variable to notify the scanning status
-    private MutableLiveData<Boolean> mIsScanning = new MutableLiveData<>();
 
     /**
      * Observe this function to listen the status of Bluetooth adapter.
@@ -66,7 +64,6 @@ public class BluetoothViewModel extends ViewModel {
      * @return The latest status
      */
     public MutableLiveData<Boolean> isBluetoothEnabled() {
-
         return mIsBluetoothEnabled;
     }
 
@@ -76,7 +73,6 @@ public class BluetoothViewModel extends ViewModel {
      * @param enabled he status of Bluetooth
      */
     public void updateBluetoothEnableState(boolean enabled) {
-
         mIsBluetoothEnabled.postValue(enabled);
     }
 
@@ -86,7 +82,6 @@ public class BluetoothViewModel extends ViewModel {
      * @return The latest scan status
      */
     public MutableLiveData<Boolean> isScanning() {
-
         return mIsScanning;
     }
 
@@ -96,7 +91,6 @@ public class BluetoothViewModel extends ViewModel {
      * @param scanning The status of scanning
      */
     public void updateScanState(boolean scanning) {
-
         mIsScanning.postValue(scanning);
     }
 }

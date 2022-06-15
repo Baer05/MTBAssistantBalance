@@ -29,7 +29,6 @@ import com.xsens.dot.android.sdk.models.XsensDotSyncManager;
 import com.xsens.dot.android.sdk.utils.XsensDotLogger;
 
 import java.io.File;
-import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -43,7 +42,7 @@ import mtb.assistant.balance.adapters.DataAdapter;
 import mtb.assistant.balance.databinding.FragmentDataBinding;
 import mtb.assistant.balance.interfaces.DataChangeInterface;
 import mtb.assistant.balance.interfaces.StreamingClickInterface;
-import mtb.assistant.balance.services.UdpClient;
+import mtb.assistant.balance.services.UdpClientThread;
 import mtb.assistant.balance.viewmodels.SensorViewModel;
 
 import static mtb.assistant.balance.adapters.DataAdapter.KEY_ADDRESS;
@@ -60,37 +59,26 @@ import static com.xsens.dot.android.sdk.models.XsensDotPayload.PAYLOAD_TYPE_COMP
 public class DataFragment extends Fragment implements StreamingClickInterface, DataChangeInterface, XsensDotSyncCallback {
 
     private static final String TAG = DataFragment.class.getSimpleName();
-
     // The code of request
     private static final int SYNCING_REQUEST_CODE = 1001;
-
     // The keys of HashMap
     public static final String KEY_LOGGER = "logger";
-
     // The view binder of DataFragment
     private FragmentDataBinding mBinding;
-
     // The devices view model instance
     private SensorViewModel mSensorViewModel;
-
     // The adapter for data item
     private DataAdapter mDataAdapter;
-
     // A list contains tag and data from each sensor
-    private ArrayList<HashMap<String, Object>> mDataList = new ArrayList<>();
-
+    private final ArrayList<HashMap<String, Object>> mDataList = new ArrayList<>();
     // A list contains mac address and XsensDotLogger object.
-    private List<HashMap<String, Object>> mLoggerList = new ArrayList<>();
-
+    private final List<HashMap<String, Object>> mLoggerList = new ArrayList<>();
     // A variable for data logging flag
     private boolean mIsLogging = false;
-
     // A dialog during the synchronization
     private AlertDialog mSyncingDialog;
-
-    private final WeakReference outerClass = new WeakReference(this);
-    private Handler handler;
-    private UdpClient udpSocket;
+    UdpClientHandler udpClientHandler;
+    private UdpClientThread udpSocket;
 
     /**
      * Get the instance of DataFragment
@@ -98,15 +86,12 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
      * @return The instance of DataFragment
      */
     public static DataFragment newInstance() {
-
         return new DataFragment();
     }
 
     @Override
     public void onAttach(@NonNull Context context) {
-
         super.onAttach(context);
-
         bindViewModel();
     }
 
@@ -117,22 +102,19 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         mBinding = FragmentDataBinding.inflate(LayoutInflater.from(getContext()));
         mBinding.toolbar.setTitle(getString(R.string.menu_start_streaming));
         ((AppCompatActivity) getActivity()).setSupportActionBar(mBinding.toolbar);
-        udpSocket = new UdpClient(handler);
+        udpClientHandler = new UdpClientHandler(this);
+        udpSocket = new UdpClientThread(udpClientHandler);
         return mBinding.getRoot();
     }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-
         super.onActivityCreated(savedInstanceState);
-
         mSensorViewModel.setStates(PLOT_STATE_ON, LOG_STATE_ON);
-
         mDataAdapter = new DataAdapter(getContext(), mDataList);
         mBinding.dataRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         mBinding.dataRecyclerView.setItemAnimator(new DefaultItemAnimator());
         mBinding.dataRecyclerView.setAdapter(mDataAdapter);
-
         AlertDialog.Builder syncingDialogBuilder = new AlertDialog.Builder(getActivity());
         syncingDialogBuilder.setView(R.layout.dialog_syncing);
         syncingDialogBuilder.setCancelable(false);
@@ -140,22 +122,18 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         mSyncingDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
             @Override
             public void onDismiss(DialogInterface dialog) {
-
                 ProgressBar bar = mSyncingDialog.findViewById(R.id.syncing_progress);
                 // Reset progress to 0 for next time to use.
                 if (bar != null) bar.setProgress(0);
             }
         });
-
         // Set the StreamingClickInterface instance to main activity.
         if (getActivity() != null) ((HomeActivity) getActivity()).setStreamingTriggerListener(this);
     }
 
     @Override
     public void onResume() {
-
         super.onResume();
-
         // Notify main activity to refresh menu.
         HomeActivity.sCurrentFragment = FRAGMENT_TAG_DATA;
         if (getActivity() != null) getActivity().invalidateOptionsMenu();
@@ -163,39 +141,30 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
 
     @Override
     public void onDetach() {
-
         super.onDetach();
-
         // Stop measurement for each sensor when exiting this page.
         mSensorViewModel.setMeasurement(false);
         // It's necessary to update this status, because user may enter this page again.
         mSensorViewModel.updateStreamingStatus(false);
-
         closeFiles();
     }
 
     @Override
     public void onStreamingTriggered() {
-
         if (mSensorViewModel.isStreaming().getValue()) {
             // To stop.
             mSensorViewModel.setMeasurement(false);
             mSensorViewModel.updateStreamingStatus(false);
-
             XsensDotSyncManager.getInstance(this).stopSyncing();
-
+            udpSocket.stopUDPSocket();
             closeFiles();
-
         } else {
             // To start.
             resetPage();
-
             if (!mSensorViewModel.checkConnection()) {
-
                 Toast.makeText(getContext(), getString(R.string.hint_check_connection), Toast.LENGTH_LONG).show();
                 return;
             }
-
             // Set first device to root.
             mSensorViewModel.setRootDevice(true);
             final ArrayList<XsensDotDevice> devices = mSensorViewModel.getAllSensors();
@@ -210,9 +179,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
      * Initialize and observe view models.
      */
     private void bindViewModel() {
-
         if (getActivity() != null) {
-
             mSensorViewModel = SensorViewModel.getInstance(getActivity());
             // Implement DataChangeInterface and override onDataChanged() function to receive data.
             mSensorViewModel.setDataChangeCallback(this);
@@ -235,15 +202,11 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
      * @return The filter profile name, "General" by default
      */
     private String getFilterProfileName(XsensDotDevice device) {
-
         int index = device.getCurrentFilterProfileIndex();
         ArrayList<FilterProfileInfo> list = device.getFilterProfileInfoList();
-
         for (FilterProfileInfo info : list) {
-
             if (info.getIndex() == index) return info.getName();
         }
-
         return "General";
     }
 
@@ -251,28 +214,20 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
      * Create data logger for each sensor.
      */
     private void createFiles() {
-
         // Remove XsensDotLogger objects from list before start data logging.
         mLoggerList.clear();
-
         ArrayList<XsensDotDevice> devices = mSensorViewModel.getAllSensors();
-
         for (XsensDotDevice device : devices) {
-
             String appVersion = BuildConfig.VERSION_NAME;
             String fwVersion = device.getFirmwareVersion();
             String address = device.getAddress();
             String tag = device.getTag().isEmpty() ? device.getName() : device.getTag();
             String filename = "";
-
             if (getContext() != null) {
-
                 // Store log file in app internal folder.
                 // Don't need user to granted the storage permission.
                 File dir = getContext().getExternalFilesDir(null);
-
                 if (dir != null) {
-
                     // This filename contains full file path.
                     filename = dir.getAbsolutePath() +
                             File.separator +
@@ -281,9 +236,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
                             ".csv";
                 }
             }
-
             Log.d(TAG, "createFiles() - " + filename);
-
             XsensDotLogger logger = new XsensDotLogger(
                     getContext(),
                     XsensDotLogger.TYPE_CSV,
@@ -295,14 +248,12 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
                     device.getCurrentOutputRate(),
                     getFilterProfileName(device),
                     appVersion);
-
             // Use mac address as a key to find logger object.
             HashMap<String, Object> map = new HashMap<>();
             map.put(KEY_ADDRESS, address);
             map.put(KEY_LOGGER, logger);
             mLoggerList.add(map);
         }
-
         mIsLogging = true;
     }
 
@@ -313,14 +264,10 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
      * @param data    The XsensDotData packet
      */
     private void updateFiles(String address, XsensDotData data) {
-
         for (HashMap<String, Object> map : mLoggerList) {
-
             String _address = (String) map.get(KEY_ADDRESS);
             if (_address != null) {
-
                 if (_address.equals(address)) {
-
                     XsensDotLogger logger = (XsensDotLogger) map.get(KEY_LOGGER);
                     if (logger != null && mIsLogging) logger.update(data);
                 }
@@ -332,9 +279,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
      * Close the data output stream.
      */
     private void closeFiles() {
-
         mIsLogging = false;
-
         for (HashMap<String, Object> map : mLoggerList) {
             // Call stop() function to flush and close the output stream.
             // Data is kept in the stream buffer and write to file when the buffer is full.
@@ -346,21 +291,15 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
 
     @Override
     public void onSyncingStarted(String address, boolean isSuccess, int requestCode) {
-
         Log.i(TAG, "onSyncingStarted() - address = " + address + ", isSuccess = " + isSuccess + ", requestCode = " + requestCode);
     }
 
     @Override
     public void onSyncingProgress(final int progress, final int requestCode) {
-
         Log.i(TAG, "onSyncingProgress() - progress = " + progress + ", requestCode = " + requestCode);
-
         if (requestCode == SYNCING_REQUEST_CODE) {
-
             if (mSyncingDialog.isShowing()) {
-
                 if (getActivity() != null) {
-
                     getActivity().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -376,49 +315,32 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
 
     @Override
     public void onSyncingResult(String address, boolean isSuccess, int requestCode) {
-
         Log.i(TAG, "onSyncingResult() - address = " + address + ", isSuccess = " + isSuccess + ", requestCode = " + requestCode);
     }
 
     @Override
     public void onSyncingDone(final HashMap<String, Boolean> syncingResultMap, final boolean isSuccess, final int requestCode) {
-
         Log.i(TAG, "onSyncingDone() - isSuccess = " + isSuccess + ", requestCode = " + requestCode);
-
         if (requestCode == SYNCING_REQUEST_CODE) {
-
             if (getActivity() != null) {
-
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-
                         if (mSyncingDialog.isShowing()) mSyncingDialog.dismiss();
-
                         mSensorViewModel.setRootDevice(false);
-
                         if (isSuccess) {
-
                             mBinding.syncResult.setText(R.string.sync_result_success);
-
                             // Syncing precess is success, choose one measurement mode to start measuring.
                             mSensorViewModel.setMeasurementMode(PAYLOAD_TYPE_COMPLETE_EULER);
-
                             createFiles();
-
                             mSensorViewModel.setMeasurement(true);
                             // Notify the current streaming status to MainActivity to refresh the menu.
                             mSensorViewModel.updateStreamingStatus(true);
-
                         } else {
-
                             mBinding.syncResult.setText(R.string.sync_result_fail);
-
                             // If the syncing result is fail, show a message to user
                             Toast.makeText(getContext(), getString(R.string.hint_syncing_failed), Toast.LENGTH_LONG).show();
-
                             for (Map.Entry<String, Boolean> result : syncingResultMap.entrySet()) {
-
                                 if (!result.getValue()) {
                                     // Get the key of this failed device.
                                     String address = result.getKey();
@@ -436,19 +358,14 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
     }
 
     public void onSyncingStopped(String address, boolean isSuccess, int requestCode) {
-
         Log.i(TAG, "onSyncingStopped() - address = " + address + ", isSuccess = " + isSuccess + ", requestCode = " + requestCode);
     }
 
     @Override
     public void onDataChanged(String address, XsensDotData data) {
-
         Log.i(TAG, "onDataChanged() - address = " + address);
-
         boolean isExist = false;
-
         for (HashMap<String, Object> map : mDataList) {
-
             String _address = (String) map.get(KEY_ADDRESS);
             if (_address.equals(address)) {
                 // If the data is exist, try to update it.
@@ -457,7 +374,6 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
                 break;
             }
         }
-
         if (!isExist) {
             // It's the first data of this sensor, create a new set and add it.
             HashMap<String, Object> map = new HashMap<>();
@@ -466,11 +382,8 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
             map.put(KEY_DATA, data);
             mDataList.add(map);
         }
-
         updateFiles(address, data);
-
         if (getActivity() != null) {
-
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -482,19 +395,19 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
     }
 
     public final void doToast(String msg) {
-        Toast.makeText(this.getContext(), (CharSequence)msg, Toast.LENGTH_SHORT).show();
+        Toast.makeText(this.getContext(), (CharSequence) msg, Toast.LENGTH_SHORT).show();
     }
 
-    static class MyHandler extends Handler {
-        private final WeakReference<DataFragment> outerClass;
+    public static class UdpClientHandler extends Handler {
+        private final DataFragment parent;
 
-        public void handleMessage( Message msg) {
-            DataFragment dataFragment = this.outerClass.get();
-            dataFragment.doToast(msg.obj.toString());
+        public UdpClientHandler(DataFragment parent) {
+            super();
+            this.parent = parent;
         }
-
-        MyHandler(WeakReference outerClass) {
-            this.outerClass = new WeakReference(outerClass);
+        @Override
+        public void handleMessage(Message msg) {
+            parent.doToast(msg.obj.toString());
         }
     }
 }
