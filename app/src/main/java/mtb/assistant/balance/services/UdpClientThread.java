@@ -1,7 +1,5 @@
 package mtb.assistant.balance.services;
 
-import android.util.Log;
-
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
