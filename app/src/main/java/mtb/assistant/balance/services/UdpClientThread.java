@@ -12,7 +12,6 @@ import java.net.UnknownHostException;
 import mtb.assistant.balance.views.DataFragment;
 
 public class UdpClientThread extends Thread{
-    private final String TAG = "UdpClientThread";
     private final DataFragment.UdpClientHandler handler;
     private DatagramSocket socket = null;
     private DatagramPacket receivePacket = null;
@@ -42,9 +41,8 @@ public class UdpClientThread extends Thread{
     }
 
     private void startSocketThread() {
-        this.clientThread = new Thread((Runnable) (UdpClientThread.this::receiveMessage));
+        this.clientThread = new Thread(UdpClientThread.this::receiveMessage);
         this.isThreadRunning = true;
-        Log.d(TAG, "thread started");
         this.clientThread.start();
     }
 
@@ -55,7 +53,6 @@ public class UdpClientThread extends Thread{
                 if(this.receivePacket == null || this.receivePacket.getLength() == 0)
                     continue;
                 String strReceive = new String(this.receivePacket.getData(), this.receivePacket.getOffset(), this.receivePacket.getLength());
-                Log.d(TAG, "Data received: " + strReceive);
                 this.handler.sendMessage(this.handler.obtainMessage(1, strReceive));
             } catch (IOException e) {
                 stopUDPSocket();
