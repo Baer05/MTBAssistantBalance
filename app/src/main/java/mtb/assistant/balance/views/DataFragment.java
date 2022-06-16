@@ -2,7 +2,6 @@ package mtb.assistant.balance.views;
 
 import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -43,6 +42,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 import mtb.assistant.balance.R;
 import mtb.assistant.balance.adapters.DataAdapter;
@@ -87,7 +87,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
     UdpClientHandler udpClientHandler;
     private UdpClientThread udpSocket;
     // create a List which contains String array
-    List<String[]> data = new ArrayList<String[]>();
+    List<String[]> data = new ArrayList<>();
     private boolean isThreadRunning = false;
     private Thread writeThread;
     private String fileName = "";
@@ -113,7 +113,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         super.onCreateView(inflater, container, savedInstanceState);
         mBinding = FragmentDataBinding.inflate(LayoutInflater.from(getContext()));
         mBinding.toolbar.setTitle(getString(R.string.menu_start_streaming));
-        ((AppCompatActivity) getActivity()).setSupportActionBar(mBinding.toolbar);
+        ((AppCompatActivity) requireActivity()).setSupportActionBar(mBinding.toolbar);
         mBinding.editCsvName.getText();
         udpClientHandler = new UdpClientHandler(this);
         udpSocket = new UdpClientThread(udpClientHandler);
@@ -451,18 +451,15 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
 
     private void startWriteDataThread() {
        isThreadRunning = true;
-       writeThread = new Thread(new Runnable() {
-           @Override
-           public void run() {
-              while (isThreadRunning) {
-                  try {
-                      Thread.sleep(10000);
-                      writeDataAtOne();
-                  } catch (InterruptedException e) {
-                      e.printStackTrace();
-                  }
+       writeThread = new Thread(() -> {
+          while (isThreadRunning) {
+              try {
+                  Thread.sleep(10000);
+                  writeDataAtOne();
+              } catch (InterruptedException e) {
+                  e.printStackTrace();
               }
-           }
+          }
        });
        writeThread.start();
     }
