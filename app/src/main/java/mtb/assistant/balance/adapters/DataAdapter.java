@@ -1,7 +1,6 @@
 package mtb.assistant.balance.adapters;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,22 +21,17 @@ import mtb.assistant.balance.R;
  */
 public class DataAdapter extends RecyclerView.Adapter<DataAdapter.DataViewHolder> {
 
-    private static final String TAG = DataAdapter.class.getSimpleName();
     // The keys of HashMap
     public static final String KEY_ADDRESS = "address", KEY_TAG = "tag", KEY_DATA = "data";
-    // The application context
-    private Context mContext;
     // Put all data from sensors into one list
-    private ArrayList<HashMap<String, Object>> mDataList;
+    private final ArrayList<HashMap<String, Object>> mDataList;
 
     /**
      * Default constructor.
      *
-     * @param context  The application context
      * @param dataList A list contains tag and data
      */
-    public DataAdapter(Context context, ArrayList<HashMap<String, Object>> dataList) {
-        mContext = context;
+    public DataAdapter(ArrayList<HashMap<String, Object>> dataList) {
         mDataList = dataList;
     }
 
@@ -54,6 +48,7 @@ public class DataAdapter extends RecyclerView.Adapter<DataAdapter.DataViewHolder
         String tag = (String) mDataList.get(position).get(KEY_TAG);
         XsensDotData xsData = (XsensDotData) mDataList.get(position).get(KEY_DATA);
         holder.sensorName.setText(tag);
+        assert xsData != null;
         double[] eulerAngles = xsData.getEuler();
         String eulerAnglesStr =
                 String.format("%.6f", eulerAngles[0]) + ", " +

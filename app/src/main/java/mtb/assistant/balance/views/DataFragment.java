@@ -4,8 +4,10 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,6 +22,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.opencsv.CSVWriter;
 import com.xsens.dot.android.sdk.BuildConfig;
 import com.xsens.dot.android.sdk.events.XsensDotData;
 import com.xsens.dot.android.sdk.interfaces.XsensDotSyncCallback;
@@ -29,7 +32,11 @@ import com.xsens.dot.android.sdk.models.XsensDotSyncManager;
 import com.xsens.dot.android.sdk.utils.XsensDotLogger;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -79,6 +86,11 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
     private AlertDialog mSyncingDialog;
     UdpClientHandler udpClientHandler;
     private UdpClientThread udpSocket;
+    // create a List which contains String array
+    List<String[]> data = new ArrayList<String[]>();
+    private boolean isThreadRunning = false;
+    private Thread writeThread;
+    private String fileName = "";
 
     /**
      * Get the instance of DataFragment
@@ -102,6 +114,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         mBinding = FragmentDataBinding.inflate(LayoutInflater.from(getContext()));
         mBinding.toolbar.setTitle(getString(R.string.menu_start_streaming));
         ((AppCompatActivity) getActivity()).setSupportActionBar(mBinding.toolbar);
+        mBinding.editCsvName.getText();
         udpClientHandler = new UdpClientHandler(this);
         udpSocket = new UdpClientThread(udpClientHandler);
         return mBinding.getRoot();
@@ -111,7 +124,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         mSensorViewModel.setStates(PLOT_STATE_ON, LOG_STATE_ON);
-        mDataAdapter = new DataAdapter(getContext(), mDataList);
+        mDataAdapter = new DataAdapter(mDataList);
         mBinding.dataRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         mBinding.dataRecyclerView.setItemAnimator(new DefaultItemAnimator());
         mBinding.dataRecyclerView.setAdapter(mDataAdapter);
@@ -119,16 +132,14 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         syncingDialogBuilder.setView(R.layout.dialog_syncing);
         syncingDialogBuilder.setCancelable(false);
         mSyncingDialog = syncingDialogBuilder.create();
-        mSyncingDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-            @Override
-            public void onDismiss(DialogInterface dialog) {
-                ProgressBar bar = mSyncingDialog.findViewById(R.id.syncing_progress);
-                // Reset progress to 0 for next time to use.
-                if (bar != null) bar.setProgress(0);
-            }
+        mSyncingDialog.setOnDismissListener(dialog -> {
+            ProgressBar bar = mSyncingDialog.findViewById(R.id.syncing_progress);
+            // Reset progress to 0 for next time to use.
+            if (bar != null) bar.setProgress(0);
         });
         // Set the StreamingClickInterface instance to main activity.
         if (getActivity() != null) ((HomeActivity) getActivity()).setStreamingTriggerListener(this);
+        Log.d(TAG, String.valueOf(mBinding.editCsvName.getText()));
     }
 
     @Override
@@ -151,27 +162,32 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
 
     @Override
     public void onStreamingTriggered() {
-        if (mSensorViewModel.isStreaming().getValue()) {
-            // To stop.
-            mSensorViewModel.setMeasurement(false);
-            mSensorViewModel.updateStreamingStatus(false);
-            XsensDotSyncManager.getInstance(this).stopSyncing();
-            udpSocket.stopUDPSocket();
-            closeFiles();
-        } else {
-            // To start.
-            resetPage();
-            if (!mSensorViewModel.checkConnection()) {
-                Toast.makeText(getContext(), getString(R.string.hint_check_connection), Toast.LENGTH_LONG).show();
-                return;
+        fileName = mBinding.editCsvName.getText().toString();
+        if(TextUtils.isEmpty(fileName)) {
+            doToast(getString(R.string.empty_file_name));
+        }else {
+            if (Boolean.TRUE.equals(mSensorViewModel.isStreaming().getValue())) {
+                // To stop.
+                mSensorViewModel.setMeasurement(false);
+                mSensorViewModel.updateStreamingStatus(false);
+                XsensDotSyncManager.getInstance(this).stopSyncing();
+                udpSocket.stopUDPSocket();
+                stopWriteDataThread();
+                closeFiles();
+            } else {
+                // To start.
+                resetPage();
+                if (!mSensorViewModel.checkConnection()) {
+                    doToast(getString(R.string.hint_check_connection));
+                    return;
+                }
+                // Set first device to root.
+                mSensorViewModel.setRootDevice(true);
+                final ArrayList<XsensDotDevice> devices = mSensorViewModel.getAllSensors();
+                // Devices will disconnect during the syncing, and do reconnection automatically.
+                XsensDotSyncManager.getInstance(this).startSyncing(devices, SYNCING_REQUEST_CODE);
+                if (!mSyncingDialog.isShowing()) mSyncingDialog.show();
             }
-            // Set first device to root.
-            mSensorViewModel.setRootDevice(true);
-            final ArrayList<XsensDotDevice> devices = mSensorViewModel.getAllSensors();
-            // Devices will disconnect during the syncing, and do reconnection automatically.
-            XsensDotSyncManager.getInstance(this).startSyncing(devices, SYNCING_REQUEST_CODE);
-            udpSocket.startUDPSocket();
-            if (!mSyncingDialog.isShowing()) mSyncingDialog.show();
         }
     }
 
@@ -300,13 +316,10 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         if (requestCode == SYNCING_REQUEST_CODE) {
             if (mSyncingDialog.isShowing()) {
                 if (getActivity() != null) {
-                    getActivity().runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            // Find the view of progress bar in dialog layout and update.
-                            ProgressBar bar = mSyncingDialog.findViewById(R.id.syncing_progress);
-                            if (bar != null) bar.setProgress(progress);
-                        }
+                    getActivity().runOnUiThread(() -> {
+                        // Find the view of progress bar in dialog layout and update.
+                        ProgressBar bar = mSyncingDialog.findViewById(R.id.syncing_progress);
+                        if (bar != null) bar.setProgress(progress);
                     });
                 }
             }
@@ -323,32 +336,31 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         Log.i(TAG, "onSyncingDone() - isSuccess = " + isSuccess + ", requestCode = " + requestCode);
         if (requestCode == SYNCING_REQUEST_CODE) {
             if (getActivity() != null) {
-                getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (mSyncingDialog.isShowing()) mSyncingDialog.dismiss();
-                        mSensorViewModel.setRootDevice(false);
-                        if (isSuccess) {
-                            mBinding.syncResult.setText(R.string.sync_result_success);
-                            // Syncing precess is success, choose one measurement mode to start measuring.
-                            mSensorViewModel.setMeasurementMode(PAYLOAD_TYPE_COMPLETE_EULER);
-                            createFiles();
-                            mSensorViewModel.setMeasurement(true);
-                            // Notify the current streaming status to MainActivity to refresh the menu.
-                            mSensorViewModel.updateStreamingStatus(true);
-                        } else {
-                            mBinding.syncResult.setText(R.string.sync_result_fail);
-                            // If the syncing result is fail, show a message to user
-                            Toast.makeText(getContext(), getString(R.string.hint_syncing_failed), Toast.LENGTH_LONG).show();
-                            for (Map.Entry<String, Boolean> result : syncingResultMap.entrySet()) {
-                                if (!result.getValue()) {
-                                    // Get the key of this failed device.
-                                    String address = result.getKey();
-                                    // It's preferred to stop measurement of all sensors.
-                                    mSensorViewModel.setMeasurement(false);
-                                    // Notify the current streaming status to MainActivity to refresh the menu.
-                                    mSensorViewModel.updateStreamingStatus(false);
-                                }
+                getActivity().runOnUiThread(() -> {
+                    if (mSyncingDialog.isShowing()) mSyncingDialog.dismiss();
+                    mSensorViewModel.setRootDevice(false);
+                    if (isSuccess) {
+                        mBinding.syncResult.setText(R.string.sync_result_success);
+                        // Syncing precess is success, choose one measurement mode to start measuring.
+                        mSensorViewModel.setMeasurementMode(PAYLOAD_TYPE_COMPLETE_EULER);
+                        createFiles();
+                        mSensorViewModel.setMeasurement(true);
+                        // Notify the current streaming status to MainActivity to refresh the menu.
+                        mSensorViewModel.updateStreamingStatus(true);
+                        udpSocket.startUDPSocket();
+                        String [] entries = "Timestamp,S1,S2,Ox,Oy,Oz,ACCx,ACCy,ACCz".split(",");
+                        data.add(entries);
+                        startWriteDataThread();
+                    } else {
+                        mBinding.syncResult.setText(R.string.sync_result_fail);
+                        // If the syncing result is fail, show a message to user
+                        doToast(getString(R.string.hint_syncing_failed));
+                        for (Map.Entry<String, Boolean> result : syncingResultMap.entrySet()) {
+                            if (!result.getValue()) {
+                                // It's preferred to stop measurement of all sensors.
+                                mSensorViewModel.setMeasurement(false);
+                                // Notify the current streaming status to MainActivity to refresh the menu.
+                                mSensorViewModel.updateStreamingStatus(false);
                             }
                         }
                     }
@@ -363,10 +375,10 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
 
     @Override
     public void onDataChanged(String address, XsensDotData data) {
-        Log.i(TAG, "onDataChanged() - address = " + address);
         boolean isExist = false;
         for (HashMap<String, Object> map : mDataList) {
             String _address = (String) map.get(KEY_ADDRESS);
+            assert _address != null;
             if (_address.equals(address)) {
                 // If the data is exist, try to update it.
                 map.put(KEY_DATA, data);
@@ -384,12 +396,9 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         }
         updateFiles(address, data);
         if (getActivity() != null) {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    // The data is coming from background thread, change to UI thread for updating.
-                    mDataAdapter.notifyDataSetChanged();
-                }
+            getActivity().runOnUiThread(() -> {
+                // The data is coming from background thread, change to UI thread for updating.
+                mDataAdapter.notifyDataSetChanged();
             });
         }
     }
@@ -397,6 +406,76 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
     public final void doToast(String msg) {
         Toast.makeText(this.getContext(), (CharSequence) msg, Toast.LENGTH_SHORT).show();
     }
+
+    private boolean checkExternalMedia(){
+        boolean mExternalStorageWriteable;
+        String state = Environment.getExternalStorageState();
+        if (Environment.MEDIA_MOUNTED.equals(state)) {
+            // Can read and write the media
+           mExternalStorageWriteable = true;
+        } else if (Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
+            // Can only read the media
+            mExternalStorageWriteable = false;
+        } else {
+            // Can't read or write
+            mExternalStorageWriteable = false;
+        }
+        return mExternalStorageWriteable;
+    }
+
+
+    public void writeDataAtOne() {
+        try {
+            if (checkExternalMedia() && !TextUtils.isEmpty(fileName)) {
+                // first create file object for file placed at location
+                File root = android.os.Environment.getExternalStorageDirectory();
+                File dir = new File (root.getAbsolutePath() + "/MTBAssistantRecording");
+                if(!dir.exists()) {
+                    dir.mkdirs();
+                }
+                String csvName = fileName + ".csv";
+                File file = new File(dir, csvName);
+                // create FileWriter object with file as parameter
+                FileWriter outputFile = new FileWriter(file, true);
+                // create CSVWriter object fileWriter object as parameter
+                CSVWriter writer = new CSVWriter(outputFile);
+                writer.writeAll(data);
+                // closing writer connection
+                writer.close();
+                data.clear();
+            }
+        } catch(IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    private void startWriteDataThread() {
+       isThreadRunning = true;
+       writeThread = new Thread(new Runnable() {
+           @Override
+           public void run() {
+              while (isThreadRunning) {
+                  try {
+                      Thread.sleep(10000);
+                      writeDataAtOne();
+                  } catch (InterruptedException e) {
+                      e.printStackTrace();
+                  }
+              }
+           }
+       });
+       writeThread.start();
+    }
+
+    private void stopWriteDataThread() {
+        isThreadRunning = false;
+        data.clear();
+        writeThread.interrupt();
+        mBinding.editCsvName.getText().clear();
+        fileName = "";
+    }
+
+
 
     public static class UdpClientHandler extends Handler {
         private final DataFragment parent;
@@ -408,6 +487,23 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         @Override
         public void handleMessage(Message msg) {
             parent.doToast(msg.obj.toString());
+            String[] values = msg.obj.toString().split(",");
+            int[] intArray = new int[values.length];
+            for(int i = 0; i < values.length; i++) {
+                intArray[i] = Integer.parseInt(values[i]);
+            }
+            //Log.d(TAG, "pressure" + intArray[0]);
+            XsensDotData xsData = (XsensDotData) parent.mDataList.get(parent.mDataList.size() - 1).get(KEY_DATA);
+            assert xsData != null;
+            //Log.d(TAG, "sensor " + Arrays.toString(xsData.getEuler()) + Arrays.toString(xsData.getFreeAcc()));
+            double[] eulerAngles = xsData.getEuler();
+            float[] freeAcc = xsData.getFreeAcc();
+            if(intArray.length == 2 && eulerAngles.length == 3 && freeAcc.length == 3) {
+                parent.data.add(new String[]{DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.now()),
+                        String.valueOf(intArray[0]), String.valueOf(intArray[1]), String.valueOf(eulerAngles[0]),
+                        String.valueOf(eulerAngles[1]), String.valueOf(eulerAngles[2]), String.valueOf(freeAcc[0]),
+                        String.valueOf(freeAcc[1]), String.valueOf(freeAcc[2])});
+            }
         }
     }
 }

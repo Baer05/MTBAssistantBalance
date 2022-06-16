@@ -17,8 +17,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
@@ -111,14 +109,6 @@ public class HomeActivity extends AppCompatActivity {
                 }
             }
         }
-        if(requestCode == REQUEST_PERMISSION_EXTERNAL_STORAGE) {
-            Log.d(TAG, "Permission ok");
-           ActivityCompat.requestPermissions(this,
-                   new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                   REQUEST_PERMISSION_EXTERNAL_STORAGE);
-        } else {
-            Log.d(TAG, "No Permission");
-        }
     }
 
     @Override
@@ -134,7 +124,7 @@ public class HomeActivity extends AppCompatActivity {
         MenuItem measureItem = menu.findItem(R.id.action_measure);
         if (mIsScanning) scanItem.setTitle(getString(R.string.menu_stop_scan));
         else scanItem.setTitle(getString(R.string.menu_start_scan));
-        final boolean isStreaming = mSensorViewModel.isStreaming().getValue();
+        final boolean isStreaming = Boolean.TRUE.equals(mSensorViewModel.isStreaming().getValue());
         if (isStreaming) streamingItem.setTitle(getString(R.string.menu_stop_streaming));
         else streamingItem.setTitle(getString(R.string.menu_start_streaming));
         if (sCurrentFragment.equals(FRAGMENT_TAG_SCAN)) {
@@ -156,8 +146,7 @@ public class HomeActivity extends AppCompatActivity {
             case R.id.action_scan:
                 if (mScanListener != null && checkBluetoothAndPermission()) {
                     // Make sure th location permission is granted then start/stop scanning.
-                    if (mIsScanning) mScanListener.onScanTriggered(false);
-                    else mScanListener.onScanTriggered(true);
+                    mScanListener.onScanTriggered(!mIsScanning);
                 }
                 break;
             case R.id.action_streaming:
@@ -167,7 +156,7 @@ public class HomeActivity extends AppCompatActivity {
             case R.id.action_measure:
                 // Change to DataFragment and put ScanFragment to the back stack.
                 Fragment dataFragment = DataFragment.newInstance();
-                addFragment(dataFragment, FRAGMENT_TAG_DATA);
+                addFragment(dataFragment);
                 break;
         }
         return super.onOptionsItemSelected(item);
@@ -185,11 +174,11 @@ public class HomeActivity extends AppCompatActivity {
 
     /**
      * Add a fragment to full the screen.
-     *  @param fragment The instance of fragment
+     * @param fragment The instance of fragment
      *
      */
-    private void addFragment(Fragment fragment, String tag) {
-        getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, tag).addToBackStack(null).commit();
+    private void addFragment(Fragment fragment) {
+        getSupportFragmentManager().beginTransaction().replace(R.id.container, fragment, HomeActivity.FRAGMENT_TAG_DATA).addToBackStack(null).commit();
     }
 
     /**
@@ -260,27 +249,18 @@ public class HomeActivity extends AppCompatActivity {
      * A receiver for Bluetooth status.
      */
     private final BroadcastReceiver mBluetoothStateReceiver = new BroadcastReceiver() {
-
         @Override
         public void onReceive(Context context, Intent intent) {
-
             final String action = intent.getAction();
-
             if (action != null) {
-
                 if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
-
                     final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
                     // Notify the Bluetooth status to ScanFragment.
                     switch (state) {
-
                         case BluetoothAdapter.STATE_OFF:
-
                             mBluetoothViewModel.updateBluetoothEnableState(false);
                             break;
-
                         case BluetoothAdapter.STATE_ON:
-
                             mBluetoothViewModel.updateBluetoothEnableState(true);
                             break;
                     }

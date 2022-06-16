@@ -42,4 +42,6 @@
     <string name="wake_lock_acquired">WakeLock acquired</string>
     <string name="wake_lock_already_acquired">WakeLock was already active!</string>
 
+    <string name="empty_file_name">You must provide a file name in order to start recording.</string>
+
 </resources>
