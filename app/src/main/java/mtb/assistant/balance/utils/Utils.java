@@ -68,4 +68,25 @@ public class Utils {
     public static void requestLocationPermission(Activity activity, int requestCode) {
         activity.requestPermissions(new String[] {Manifest.permission.ACCESS_FINE_LOCATION}, requestCode);
     }
+
+    /**
+     * Allow app to write to external storage.
+     *
+     * @param activity The activity class
+     * @return True - if the permission is granted
+     */
+    public static boolean isWriteStoragePermissionGranted(Activity activity) {
+        return activity.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
+                PackageManager.PERMISSION_GRANTED;
+    }
+
+    /**
+     * If the write to external storage permission isn't granted, popup a system dialog for user to enable it.
+     *
+     * @param activity    The main activity
+     * @param requestCode The request code for this action
+     */
+    public static void requestWriteExternalStoragePermission(Activity activity, int requestCode) {
+        activity.requestPermissions(new String[] {Manifest.permission.WRITE_EXTERNAL_STORAGE}, requestCode);
+    }
 }

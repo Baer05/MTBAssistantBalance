@@ -33,6 +33,10 @@
     <!-- Add wake lock to allow uninterrupted streaming -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
+    <!-- Needed for write and read from external storage -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+
     <uses-feature
         android:name="android.hardware.bluetooth_le"
         android:required="false" />

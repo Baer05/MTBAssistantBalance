@@ -17,6 +17,8 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
@@ -35,7 +37,9 @@ public class HomeActivity extends AppCompatActivity {
 
     private static final String TAG = HomeActivity.class.getSimpleName();
     // The code of request
-    private static final int REQUEST_ENABLE_BLUETOOTH = 1001, REQUEST_PERMISSION_LOCATION = 1002;
+    private static final int REQUEST_ENABLE_BLUETOOTH = 1001,
+            REQUEST_PERMISSION_LOCATION = 1002,
+            REQUEST_PERMISSION_EXTERNAL_STORAGE = 23;
     // The tag of fragments
     public static final String FRAGMENT_TAG_SCAN = "scan", FRAGMENT_TAG_DATA = "data";
     // The view binder of MainActivity
@@ -106,6 +110,14 @@ public class HomeActivity extends AppCompatActivity {
                     else Toast.makeText(this, getString(R.string.hint_allow_location), Toast.LENGTH_LONG).show();
                 }
             }
+        }
+        if(requestCode == REQUEST_PERMISSION_EXTERNAL_STORAGE) {
+            Log.d(TAG, "Permission ok");
+           ActivityCompat.requestPermissions(this,
+                   new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                   REQUEST_PERMISSION_EXTERNAL_STORAGE);
+        } else {
+            Log.d(TAG, "No Permission");
         }
     }
 
@@ -187,9 +199,11 @@ public class HomeActivity extends AppCompatActivity {
 
         boolean isBluetoothEnabled = Utils.isBluetoothAdapterEnabled(this);
         boolean isPermissionGranted = Utils.isLocationPermissionGranted(this);
+        boolean isWritePermissionGranted = Utils.isWriteStoragePermissionGranted(this);
 
         if (isBluetoothEnabled) {
             if (!isPermissionGranted) Utils.requestLocationPermission(this, REQUEST_PERMISSION_LOCATION);
+            if(!isWritePermissionGranted) Utils.requestWriteExternalStoragePermission(this, REQUEST_PERMISSION_EXTERNAL_STORAGE);
         } else {
             Utils.requestEnableBluetooth(this, REQUEST_ENABLE_BLUETOOTH);
         }
