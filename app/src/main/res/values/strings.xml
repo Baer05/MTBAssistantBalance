@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">balanceAssistantMtb</string>
+    <string name="app_name">MtbAssistant</string>
     <string name="title_home">Home</string>
     <string name="title_scan">Scan</string>
     <string name="title_dashboard">Dashboard</string>
