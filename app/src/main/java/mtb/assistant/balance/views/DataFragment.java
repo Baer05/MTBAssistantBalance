@@ -42,7 +42,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 
 import mtb.assistant.balance.R;
 import mtb.assistant.balance.adapters.DataAdapter;
@@ -348,7 +347,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
                         // Notify the current streaming status to MainActivity to refresh the menu.
                         mSensorViewModel.updateStreamingStatus(true);
                         udpSocket.startUDPSocket();
-                        String [] entries = "Timestamp,S1,S2,Ox,Oy,Oz,ACCx,ACCy,ACCz".split(",");
+                        String [] entries = "Timestamp, S1, S2, q0, q1, q2, q3, ACCx, ACCy, ACCz".split(",");
                         data.add(entries);
                         startWriteDataThread();
                     } else {
@@ -490,16 +489,17 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
                 intArray[i] = Integer.parseInt(values[i]);
             }
             //Log.d(TAG, "pressure" + intArray[0]);
-            XsensDotData xsData = (XsensDotData) parent.mDataList.get(parent.mDataList.size() - 1).get(KEY_DATA);
-            assert xsData != null;
-            //Log.d(TAG, "sensor " + Arrays.toString(xsData.getEuler()) + Arrays.toString(xsData.getFreeAcc()));
-            double[] eulerAngles = xsData.getEuler();
-            float[] freeAcc = xsData.getFreeAcc();
-            if(intArray.length == 2 && eulerAngles.length == 3 && freeAcc.length == 3) {
-                parent.data.add(new String[]{DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.now()),
-                        String.valueOf(intArray[0]), String.valueOf(intArray[1]), String.valueOf(eulerAngles[0]),
-                        String.valueOf(eulerAngles[1]), String.valueOf(eulerAngles[2]), String.valueOf(freeAcc[0]),
-                        String.valueOf(freeAcc[1]), String.valueOf(freeAcc[2])});
+            if(parent.mDataList.size() > 0) {
+                XsensDotData xsData = (XsensDotData) parent.mDataList.get(parent.mDataList.size() - 1).get(KEY_DATA);
+                assert xsData != null;
+                float[] quaternions = xsData.getQuat();
+                float[] freeAcc = xsData.getFreeAcc();
+                if (intArray.length == 2 && quaternions.length == 4 && freeAcc.length == 3) {
+                    parent.data.add(new String[]{DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.now()),
+                            String.valueOf(intArray[0]), String.valueOf(intArray[1]), String.valueOf(quaternions[0]),
+                            String.valueOf(quaternions[1]), String.valueOf(quaternions[2]),  String.valueOf(quaternions[3]), String.valueOf(freeAcc[0]),
+                            String.valueOf(freeAcc[1]), String.valueOf(freeAcc[2])});
+                }
             }
         }
     }
