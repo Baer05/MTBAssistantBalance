@@ -1,5 +1,6 @@
 package mtb.assistant.balance.views;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.os.Bundle;
@@ -37,7 +38,6 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -206,6 +206,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
     /**
      * Reset page UI to default.
      */
+    @SuppressLint("NotifyDataSetChanged")
     private void resetPage() {
         mBinding.syncResult.setText("-");
         mDataList.clear();
@@ -375,6 +376,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         Log.i(TAG, "onSyncingStopped() - address = " + address + ", isSuccess = " + isSuccess + ", requestCode = " + requestCode);
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     @Override
     public void onDataChanged(String address, XsensDotData data) {
         boolean isExist = false;
@@ -433,8 +435,9 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
                 File root = android.os.Environment.getExternalStorageDirectory();
                 File dir = new File (root.getAbsolutePath() + "/MTBAssistantRecording");
                 if(!dir.exists()) {
-                    dir.mkdirs();
+                    boolean wasSuccessful = dir.mkdirs();
                 }
+
                 String csvName = fileName + ".csv";
                 File file = new File(dir, csvName);
                 // create FileWriter object with file as parameter
