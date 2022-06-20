@@ -88,7 +88,9 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
     UdpClientHandler udpClientHandler;
     private UdpClientThread udpSocket;
     // create a List which contains String array
-    List<String[]> data = new ArrayList<>();
+    List<String[]> data_one = new ArrayList<>();
+    List<String[]> data_two = new ArrayList<>();
+    boolean isFirstDataArray = true;
     private boolean isThreadRunning = false;
     private Thread writeThread;
     private String fileName = "";
@@ -350,7 +352,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
                         // Notify the current streaming status to MainActivity to refresh the menu.
                         mSensorViewModel.updateStreamingStatus(true);
                         udpSocket.startUDPSocket();
-                        data.add(new String[] {"Timestamp",  "S1", "S2", "q0", "q1", "q2", "q3", "ACCx", "ACCy", "ACCz"});
+                        data_one.add(new String[] {"Timestamp",  "S1", "S2", "q0", "q1", "q2", "q3", "ACCx", "ACCy", "ACCz"});
                         mBinding.editCsvName.setFocusable(false);
                         mBinding.editCsvName.setShowSoftInputOnFocus(false);
                         startWriteDataThread();
@@ -444,10 +446,17 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
                 FileWriter outputFile = new FileWriter(file, true);
                 // create CSVWriter object fileWriter object as parameter
                 CSVWriter writer = new CSVWriter(outputFile);
-                writer.writeAll(data);
+                if(isFirstDataArray) {
+                    isFirstDataArray = false;
+                    writer.writeAll(data_one);
+                    data_one.clear();
+                } else {
+                    isFirstDataArray = true;
+                    writer.writeAll(data_two);
+                    data_two.clear();
+                }
                 // closing writer connection
                 writer.close();
-                data.clear();
             }
         } catch(IOException e){
             e.printStackTrace();
@@ -471,7 +480,8 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
 
     private void stopWriteDataThread() {
         isThreadRunning = false;
-        data.clear();
+        data_one.clear();
+        data_two.clear();
         writeThread.interrupt();
         mBinding.editCsvName.setFocusableInTouchMode(true);
         mBinding.editCsvName.getText().clear();
@@ -495,19 +505,23 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
             for(int i = 0; i < values.length; i++) {
                 intArray[i] = Integer.parseInt(values[i]);
             }
-            //Log.d(TAG, "pressure" + intArray[0]);
             if(parent.mDataList.size() > 0) {
                 XsensDotData xsData = (XsensDotData) parent.mDataList.get(parent.mDataList.size() - 1).get(KEY_DATA);
                 assert xsData != null;
                 float[] quaternions = xsData.getQuat();
                 float[] freeAcc = xsData.getFreeAcc();
                 if (intArray.length == 2 && quaternions.length == 4 && freeAcc.length == 3) {
-                    parent.data.add(new String[] {DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").
+                    String [] output = new String[] {DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").
                             format(LocalDateTime.now()), String.valueOf(intArray[0]), String.
                             valueOf(intArray[1]), String.valueOf(quaternions[0]), String.
                             valueOf(quaternions[1]), String.valueOf(quaternions[2]), String.
                             valueOf(quaternions[3]), String.valueOf(freeAcc[0]), String.
-                            valueOf(freeAcc[1]), String.valueOf(freeAcc[2])});
+                            valueOf(freeAcc[1]), String.valueOf(freeAcc[2])};
+                    if(parent.isFirstDataArray) {
+                        parent.data_one.add(output);
+                    } else {
+                        parent.data_two.add(output);
+                    }
                 }
             }
         }
