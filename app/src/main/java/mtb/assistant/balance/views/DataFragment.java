@@ -37,6 +37,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -51,6 +52,7 @@ import mtb.assistant.balance.interfaces.StreamingClickInterface;
 import mtb.assistant.balance.services.UdpClientThread;
 import mtb.assistant.balance.viewmodels.SensorViewModel;
 
+import static com.xsens.dot.android.sdk.models.XsensDotPayload.PAYLOAD_TYPE_COMPLETE_QUATERNION;
 import static mtb.assistant.balance.adapters.DataAdapter.KEY_ADDRESS;
 import static mtb.assistant.balance.adapters.DataAdapter.KEY_DATA;
 import static mtb.assistant.balance.adapters.DataAdapter.KEY_TAG;
@@ -341,14 +343,15 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
                     if (isSuccess) {
                         mBinding.syncResult.setText(R.string.sync_result_success);
                         // Syncing precess is success, choose one measurement mode to start measuring.
-                        mSensorViewModel.setMeasurementMode(PAYLOAD_TYPE_COMPLETE_EULER);
+                        mSensorViewModel.setMeasurementMode(PAYLOAD_TYPE_COMPLETE_QUATERNION);
                         createFiles();
                         mSensorViewModel.setMeasurement(true);
                         // Notify the current streaming status to MainActivity to refresh the menu.
                         mSensorViewModel.updateStreamingStatus(true);
                         udpSocket.startUDPSocket();
-                        String [] entries = "Timestamp, S1, S2, q0, q1, q2, q3, ACCx, ACCy, ACCz".split(",");
-                        data.add(entries);
+                        data.add(new String[] {"Timestamp",  "S1", "S2", "q0", "q1", "q2", "q3", "ACCx", "ACCy", "ACCz"});
+                        mBinding.editCsvName.setFocusable(false);
+                        mBinding.editCsvName.setShowSoftInputOnFocus(false);
                         startWriteDataThread();
                     } else {
                         mBinding.syncResult.setText(R.string.sync_result_fail);
@@ -403,7 +406,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
     }
 
     public final void doToast(String msg) {
-        Toast.makeText(this.getContext(), (CharSequence) msg, Toast.LENGTH_SHORT).show();
+        Toast.makeText(this.getContext(), msg, Toast.LENGTH_SHORT).show();
     }
 
     private boolean checkExternalMedia(){
@@ -467,6 +470,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         isThreadRunning = false;
         data.clear();
         writeThread.interrupt();
+        mBinding.editCsvName.setFocusableInTouchMode(true);
         mBinding.editCsvName.getText().clear();
         fileName = "";
     }
@@ -495,10 +499,12 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
                 float[] quaternions = xsData.getQuat();
                 float[] freeAcc = xsData.getFreeAcc();
                 if (intArray.length == 2 && quaternions.length == 4 && freeAcc.length == 3) {
-                    parent.data.add(new String[]{DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.now()),
-                            String.valueOf(intArray[0]), String.valueOf(intArray[1]), String.valueOf(quaternions[0]),
-                            String.valueOf(quaternions[1]), String.valueOf(quaternions[2]),  String.valueOf(quaternions[3]), String.valueOf(freeAcc[0]),
-                            String.valueOf(freeAcc[1]), String.valueOf(freeAcc[2])});
+                    parent.data.add(new String[] {DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").
+                            format(LocalDateTime.now()), String.valueOf(intArray[0]), String.
+                            valueOf(intArray[1]), String.valueOf(quaternions[0]), String.
+                            valueOf(quaternions[1]), String.valueOf(quaternions[2]), String.
+                            valueOf(quaternions[3]), String.valueOf(freeAcc[0]), String.
+                            valueOf(freeAcc[1]), String.valueOf(freeAcc[2])});
                 }
             }
         }
