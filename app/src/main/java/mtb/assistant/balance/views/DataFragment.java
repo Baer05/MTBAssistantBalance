@@ -34,6 +34,9 @@ import com.xsens.dot.android.sdk.utils.XsensDotLogger;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -168,7 +171,9 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         fileName = mBinding.editCsvName.getText().toString();
         if(TextUtils.isEmpty(fileName)) {
             doToast(getString(R.string.empty_file_name));
-        }else {
+        } else if(echIfFileExist()) {
+            doToast(getString(R.string.file_already_exists));
+        } else {
             if (Boolean.TRUE.equals(mSensorViewModel.isStreaming().getValue())) {
                 // To stop.
                 mSensorViewModel.setMeasurement(false);
@@ -429,6 +434,12 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         return mExternalStorageWriteable;
     }
 
+    private boolean echIfFileExist() {
+        String csvName = fileName + ".csv";
+        Path path = Paths.get(android.os.Environment.getExternalStorageDirectory().
+                getAbsolutePath() + "/MTBAssistantRecording/" + csvName);
+        return Files.exists(path);
+    }
 
     public void writeDataAtOne() {
         try {
