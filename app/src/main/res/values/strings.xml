@@ -45,4 +45,8 @@
     <string name="empty_file_name">You must provide a file name in order to start recording.</string>
     <string name="file_already_exists">This file already exists. Please choose another name.</string>
 
+    <string name="feel_space_connection">Belt Connection</string>
+    <string name="feel_space_search_and_connect_button">Search and connect</string>
+    <string name="feel_space_connection_state">Belt Connection state:</string>
+
 </resources>

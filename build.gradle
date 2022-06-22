@@ -20,6 +20,7 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        jcenter()
 
         // Add local libs repo
         // If do not add this, when use our SDK, it will show ERROR: Failed to resolve: :XsensDotSdk:

@@ -23,13 +23,10 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.opencsv.CSVWriter;
-import com.xsens.dot.android.sdk.BuildConfig;
 import com.xsens.dot.android.sdk.events.XsensDotData;
 import com.xsens.dot.android.sdk.interfaces.XsensDotSyncCallback;
-import com.xsens.dot.android.sdk.models.FilterProfileInfo;
 import com.xsens.dot.android.sdk.models.XsensDotDevice;
 import com.xsens.dot.android.sdk.models.XsensDotSyncManager;
-import com.xsens.dot.android.sdk.utils.XsensDotLogger;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -37,15 +34,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import mtb.assistant.balance.R;
@@ -63,7 +56,6 @@ import static mtb.assistant.balance.adapters.DataAdapter.KEY_TAG;
 import static mtb.assistant.balance.views.HomeActivity.FRAGMENT_TAG_DATA;
 import static com.xsens.dot.android.sdk.models.XsensDotDevice.LOG_STATE_ON;
 import static com.xsens.dot.android.sdk.models.XsensDotDevice.PLOT_STATE_ON;
-import static com.xsens.dot.android.sdk.models.XsensDotPayload.PAYLOAD_TYPE_COMPLETE_EULER;
 
 /**
  * A fragment for presenting the data and storing to file.
@@ -73,8 +65,6 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
     private static final String TAG = DataFragment.class.getSimpleName();
     // The code of request
     private static final int SYNCING_REQUEST_CODE = 1001;
-    // The keys of HashMap
-    public static final String KEY_LOGGER = "logger";
     // The view binder of DataFragment
     private FragmentDataBinding mBinding;
     // The devices view model instance
@@ -83,10 +73,6 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
     private DataAdapter mDataAdapter;
     // A list contains tag and data from each sensor
     private final ArrayList<HashMap<String, Object>> mDataList = new ArrayList<>();
-    // A list contains mac address and XsensDotLogger object.
-    private final List<HashMap<String, Object>> mLoggerList = new ArrayList<>();
-    // A variable for data logging flag
-    private boolean mIsLogging = false;
     // A dialog during the synchronization
     private AlertDialog mSyncingDialog;
     UdpClientHandler udpClientHandler;
@@ -164,7 +150,6 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         mSensorViewModel.setMeasurement(false);
         // It's necessary to update this status, because user may enter this page again.
         mSensorViewModel.updateStreamingStatus(false);
-        closeFiles();
     }
 
     @Override
@@ -180,7 +165,6 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
                 XsensDotSyncManager.getInstance(this).stopSyncing();
                 udpSocket.stopUDPSocket();
                 stopWriteDataThread();
-                closeFiles();
             } else if(checkIfFileExist()) {
                 doToast(getString(R.string.file_already_exists));
             }else {
@@ -221,100 +205,6 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         mDataAdapter.notifyDataSetChanged();
     }
 
-    /**
-     * Get the filter profile name.
-     *
-     * @param device The XsensDotDevice object
-     * @return The filter profile name, "General" by default
-     */
-    private String getFilterProfileName(XsensDotDevice device) {
-        int index = device.getCurrentFilterProfileIndex();
-        ArrayList<FilterProfileInfo> list = device.getFilterProfileInfoList();
-        for (FilterProfileInfo info : list) {
-            if (info.getIndex() == index) return info.getName();
-        }
-        return "General";
-    }
-
-    /**
-     * Create data logger for each sensor.
-     */
-    private void createFiles() {
-        // Remove XsensDotLogger objects from list before start data logging.
-        mLoggerList.clear();
-        ArrayList<XsensDotDevice> devices = mSensorViewModel.getAllSensors();
-        for (XsensDotDevice device : devices) {
-            String appVersion = BuildConfig.VERSION_NAME;
-            String fwVersion = device.getFirmwareVersion();
-            String address = device.getAddress();
-            String tag = device.getTag().isEmpty() ? device.getName() : device.getTag();
-            String filename = "";
-            if (getContext() != null) {
-                // Store log file in app internal folder.
-                // Don't need user to granted the storage permission.
-                File dir = getContext().getExternalFilesDir(null);
-                if (dir != null) {
-                    // This filename contains full file path.
-                    filename = dir.getAbsolutePath() +
-                            File.separator +
-                            tag + "_" +
-                            new SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.getDefault()).format(new Date()) +
-                            ".csv";
-                }
-            }
-            Log.d(TAG, "createFiles() - " + filename);
-            XsensDotLogger logger = new XsensDotLogger(
-                    getContext(),
-                    XsensDotLogger.TYPE_CSV,
-                    PAYLOAD_TYPE_COMPLETE_EULER,
-                    filename,
-                    tag,
-                    fwVersion,
-                    device.isSynced(),
-                    device.getCurrentOutputRate(),
-                    getFilterProfileName(device),
-                    appVersion);
-            // Use mac address as a key to find logger object.
-            HashMap<String, Object> map = new HashMap<>();
-            map.put(KEY_ADDRESS, address);
-            map.put(KEY_LOGGER, logger);
-            mLoggerList.add(map);
-        }
-        mIsLogging = true;
-    }
-
-    /**
-     * Update data to specific file.
-     *
-     * @param address The mac address of device
-     * @param data    The XsensDotData packet
-     */
-    private void updateFiles(String address, XsensDotData data) {
-        for (HashMap<String, Object> map : mLoggerList) {
-            String _address = (String) map.get(KEY_ADDRESS);
-            if (_address != null) {
-                if (_address.equals(address)) {
-                    XsensDotLogger logger = (XsensDotLogger) map.get(KEY_LOGGER);
-                    if (logger != null && mIsLogging) logger.update(data);
-                }
-            }
-        }
-    }
-
-    /**
-     * Close the data output stream.
-     */
-    private void closeFiles() {
-        mIsLogging = false;
-        for (HashMap<String, Object> map : mLoggerList) {
-            // Call stop() function to flush and close the output stream.
-            // Data is kept in the stream buffer and write to file when the buffer is full.
-            // Call this function to write data to file whether the buffer is full or not.
-            XsensDotLogger logger = (XsensDotLogger) map.get(KEY_LOGGER);
-            if (logger != null) logger.stop();
-        }
-    }
-
     @Override
     public void onSyncingStarted(String address, boolean isSuccess, int requestCode) {
         Log.i(TAG, "onSyncingStarted() - address = " + address + ", isSuccess = " + isSuccess + ", requestCode = " + requestCode);
@@ -353,7 +243,6 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
                         mBinding.syncResult.setText(R.string.sync_result_success);
                         // Syncing precess is success, choose one measurement mode to start measuring.
                         mSensorViewModel.setMeasurementMode(PAYLOAD_TYPE_COMPLETE_QUATERNION);
-                        createFiles();
                         mSensorViewModel.setMeasurement(true);
                         // Notify the current streaming status to MainActivity to refresh the menu.
                         mSensorViewModel.updateStreamingStatus(true);
@@ -405,7 +294,6 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
             map.put(KEY_DATA, data);
             mDataList.add(map);
         }
-        updateFiles(address, data);
         if (getActivity() != null) {
             getActivity().runOnUiThread(() -> {
                 // The data is coming from background thread, change to UI thread for updating.
@@ -497,8 +385,6 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         mBinding.editCsvName.getText().clear();
         fileName = "";
     }
-
-
 
     public static class UdpClientHandler extends Handler {
         private final DataFragment parent;
