@@ -369,7 +369,6 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
 
     @Override
     public void onXsensDotConnectionChanged(String address, int state) {
-        Log.i(TAG, "onXsensDotConnectionChanged() - address = " + address + ", state = " + state);
         final XsensDotDevice xsDevice = getSensor(address);
         if (xsDevice != null) mConnectionChangedSensor.postValue(xsDevice);
         switch (state) {
@@ -421,7 +420,6 @@ public class SensorViewModel extends ViewModel implements XsensDotDeviceCallback
 
     @Override
     public void onXsensDotDataChanged(String address, XsensDotData data) {
-        Log.i(TAG, "onXsensDotDataChanged() - address = " + address);
         // Don't use LiveData variable to transfer data to activity/fragment.
         // The main (UI) thread isn't fast enough to store data by 60Hz.
         if (mDataChangeInterface != null) mDataChangeInterface.onDataChanged(address, data);

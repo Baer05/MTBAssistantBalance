@@ -41,6 +41,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -171,10 +172,8 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         fileName = mBinding.editCsvName.getText().toString();
         if(TextUtils.isEmpty(fileName)) {
             doToast(getString(R.string.empty_file_name));
-        } else if(echIfFileExist()) {
-            doToast(getString(R.string.file_already_exists));
         } else {
-            if (Boolean.TRUE.equals(mSensorViewModel.isStreaming().getValue())) {
+             if (Boolean.TRUE.equals(mSensorViewModel.isStreaming().getValue())) {
                 // To stop.
                 mSensorViewModel.setMeasurement(false);
                 mSensorViewModel.updateStreamingStatus(false);
@@ -182,7 +181,9 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
                 udpSocket.stopUDPSocket();
                 stopWriteDataThread();
                 closeFiles();
-            } else {
+            } else if(checkIfFileExist()) {
+                doToast(getString(R.string.file_already_exists));
+            }else {
                 // To start.
                 resetPage();
                 if (!mSensorViewModel.checkConnection()) {
@@ -359,7 +360,6 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
                         udpSocket.startUDPSocket();
                         data_one.add(new String[] {"Timestamp",  "S1", "S2", "q0", "q1", "q2", "q3", "ACCx", "ACCy", "ACCz"});
                         mBinding.editCsvName.setFocusable(false);
-                        mBinding.editCsvName.setShowSoftInputOnFocus(false);
                         startWriteDataThread();
                     } else {
                         mBinding.syncResult.setText(R.string.sync_result_fail);
@@ -434,7 +434,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         return mExternalStorageWriteable;
     }
 
-    private boolean echIfFileExist() {
+    private boolean checkIfFileExist() {
         String csvName = fileName + ".csv";
         Path path = Paths.get(android.os.Environment.getExternalStorageDirectory().
                 getAbsolutePath() + "/MTBAssistantRecording/" + csvName);
@@ -450,7 +450,6 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
                 if(!dir.exists()) {
                     boolean wasSuccessful = dir.mkdirs();
                 }
-
                 String csvName = fileName + ".csv";
                 File file = new File(dir, csvName);
                 // create FileWriter object with file as parameter
@@ -459,11 +458,11 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
                 CSVWriter writer = new CSVWriter(outputFile);
                 if(isFirstDataArray) {
                     isFirstDataArray = false;
-                    writer.writeAll(data_one);
+                    writer.writeAll(data_one,true);
                     data_one.clear();
                 } else {
                     isFirstDataArray = true;
-                    writer.writeAll(data_two);
+                    writer.writeAll(data_two,true);
                     data_two.clear();
                 }
                 // closing writer connection
