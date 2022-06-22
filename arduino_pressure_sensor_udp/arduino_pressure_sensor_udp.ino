@@ -5,8 +5,10 @@
 
 int status = WL_IDLE_STATUS;
 ///////please enter your sensitive data in the Secret tab/arduino_secrets.h
-char ssid[] = "BaerTaHome"; //  your network SSID (name)
-char pass[] = "77478940435180061509";    // your network password (use for WPA, or use as key for WEP)
+//char ssid[] = "BaerTaHome"; //  your network SSID (name)
+//char pass[] = "77478940435180061509";    // your network password (use for WPA, or use as key for WEP)
+char ssid[] = "MtbAssistant"; //  your network SSID (name)
+char pass[] = "b33c8e7879bd";    // your network password (use for WPA, or use as key for WEP)
 int keyIndex = 0;            // your network key Index number (needed only for WEP)
 
 int A0value = 0;
@@ -101,7 +103,8 @@ void loop() {
   Serial.println("Contents:");
   Serial.println(sensorValues);
   // send a reply, to the IP address and port that sent us the packet we received
-  Udp.beginPacket("192.168.178.255", localPort);
+  //Udp.beginPacket("192.168.178.255", localPort);
+  Udp.beginPacket("10.133.132.215", localPort);
   Udp.write(sensorValues);
   Udp.endPacket();
   delay(200);
