@@ -363,7 +363,6 @@ public class ScanFragment extends Fragment implements XsensDotScannerCallback, S
 
     @Override
     public void onBeltConnectionStateChanged(BeltConnectionState state) {
-        Log.d(TAG, "verännderung?  " + state);
         updateUI();
     }
 
