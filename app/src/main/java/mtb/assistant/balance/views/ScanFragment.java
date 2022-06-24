@@ -9,22 +9,27 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.Observer;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.xsens.dot.android.sdk.interfaces.XsensDotScannerCallback;
-import com.xsens.dot.android.sdk.models.XsensDotDevice;
 import com.xsens.dot.android.sdk.utils.XsensDotScanner;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import de.feelspace.fslib.BeltConnectionState;
+import de.feelspace.fslib.NavigationController;
+import de.feelspace.fslib.NavigationEventListener;
+import de.feelspace.fslib.NavigationState;
+import de.feelspace.fslib.PowerStatus;
 import mtb.assistant.balance.R;
 import mtb.assistant.balance.adapters.ScanAdapter;
 import mtb.assistant.balance.databinding.FragmentScanBinding;
@@ -48,25 +53,24 @@ import static mtb.assistant.balance.views.HomeActivity.FRAGMENT_TAG_SCAN;
 /**
  * A fragment for scanned item.
  */
-public class ScanFragment extends Fragment implements XsensDotScannerCallback, SensorClickInterface, ScanClickInterface, BatteryChangedInterface {
+public class ScanFragment extends Fragment implements XsensDotScannerCallback, SensorClickInterface,
+        ScanClickInterface, BatteryChangedInterface, NavigationEventListener {
 
     private static final String TAG = ScanFragment.class.getSimpleName();
-    // The view binder of ScanFragment
-    private FragmentScanBinding mBinding;
-    // The Bluetooth view model instance
-    private BluetoothViewModel mBluetoothViewModel;
-    // The devices view model instance
-    private SensorViewModel mSensorViewModel;
-    // The adapter for scanned device item
-    private ScanAdapter mScanAdapter;
+
+    private FragmentScanBinding mBinding;    // The view binder of ScanFragment
+    private BluetoothViewModel mBluetoothViewModel; // The Bluetooth view model instance
+    private SensorViewModel mSensorViewModel;    // The devices view model instance
+    private ScanAdapter mScanAdapter;    // The adapter for scanned device item
     // A list contains scanned Bluetooth device
     private final ArrayList<HashMap<String, Object>> mScannedSensorList = new ArrayList<>();
-    // The XsensDotScanner object
-    private XsensDotScanner mXsDotScanner;
-    // A variable for scanning flag
-    private boolean mIsScanning = false;
-    // A dialog during the connection
-    private AlertDialog mConnectionDialog;
+    private XsensDotScanner mXsDotScanner;   // The XsensDotScanner object
+    private boolean mIsScanning = false;     // A variable for scanning flag
+    private AlertDialog mConnectionDialog;   // A dialog during the connection
+    private NavigationController navigationController;   // Belt navigation controller
+
+    // Formats
+    private static final DecimalFormat integerPercentFormat = new DecimalFormat("#0 '%'");
 
     /**
      * Get the instance of ScanFragment
@@ -90,6 +94,8 @@ public class ScanFragment extends Fragment implements XsensDotScannerCallback, S
         mBinding = FragmentScanBinding.inflate(LayoutInflater.from(getContext()));
         mBinding.toolbar.setTitle(getString(R.string.title_scan));
         ((AppCompatActivity) getActivity()).setSupportActionBar(mBinding.toolbar);
+        // Retrieve the navigation controller
+        navigationController = new NavigationController(requireContext());
         return mBinding.getRoot();
     }
 
@@ -115,6 +121,8 @@ public class ScanFragment extends Fragment implements XsensDotScannerCallback, S
         // Notify main activity to refresh menu.
         HomeActivity.sCurrentFragment = FRAGMENT_TAG_SCAN;
         if (getActivity() != null) getActivity().invalidateOptionsMenu();
+        navigationController.addNavigationEventListener(this);
+        updateUI();
     }
 
     @Override
@@ -123,6 +131,7 @@ public class ScanFragment extends Fragment implements XsensDotScannerCallback, S
         // Stop scanning to let other apps to use scan function.
         if (mXsDotScanner != null) mXsDotScanner.stopScan();
         mBluetoothViewModel.updateScanState(false);
+        navigationController.removeNavigationEventListener(this);
     }
 
     @Override
@@ -143,6 +152,7 @@ public class ScanFragment extends Fragment implements XsensDotScannerCallback, S
             mScannedSensorList.clear();
             mScanAdapter.notifyDataSetChanged();
             mIsScanning = mXsDotScanner.startScan();
+            navigationController.searchAndConnectBelt();
         } else {
             // If success for stopping, it will return True from SDK. So use !(not) here.
             mIsScanning = !mXsDotScanner.stopScan();
@@ -225,49 +235,39 @@ public class ScanFragment extends Fragment implements XsensDotScannerCallback, S
         if (getActivity() != null) {
             mBluetoothViewModel = BluetoothViewModel.getInstance(getActivity());
             mSensorViewModel = SensorViewModel.getInstance(getActivity());
-            mBluetoothViewModel.isBluetoothEnabled().observe(this, new Observer<Boolean>() {
-                @Override
-                public void onChanged(Boolean enabled) {
-                    Log.d(TAG, "isBluetoothEnabled = " + enabled);
-                    if (enabled) {
-                        initXsDotScanner();
-                    } else {
-                        mIsScanning = false;
-                        mBluetoothViewModel.updateScanState(false);
-                    }
+            mBluetoothViewModel.isBluetoothEnabled().observe(this, enabled -> {
+                if (enabled) {
+                    initXsDotScanner();
+                } else {
+                    mIsScanning = false;
+                    mBluetoothViewModel.updateScanState(false);
                 }
             });
-            mSensorViewModel.getConnectionChangedDevice().observe(this, new Observer<XsensDotDevice>() {
-                @Override
-                public void onChanged(XsensDotDevice device) {
-                    String address = device.getAddress();
-                    int state = device.getConnectionState();
-                    Log.d(TAG, "getConnectionChangedDevice() - address = " + address + ", state = " + state);
-                    for (HashMap<String, Object> map : mScannedSensorList) {
-                        BluetoothDevice _device = (BluetoothDevice) map.get(KEY_DEVICE);
-                        if (_device != null) {
-                            String _address = _device.getAddress();
-                            // Update connection state by the same mac address.
-                            if (_address.equals(address)) {
-                                map.put(KEY_CONNECTION_STATE, state);
-                                mScanAdapter.notifyDataSetChanged();
-                            }
+            mSensorViewModel.getConnectionChangedDevice().observe(this, device -> {
+                String address = device.getAddress();
+                int state = device.getConnectionState();
+                Log.d(TAG, "getConnectionChangedDevice() - address = " + address + ", state = " + state);
+                for (HashMap<String, Object> map : mScannedSensorList) {
+                    BluetoothDevice _device = (BluetoothDevice) map.get(KEY_DEVICE);
+                    if (_device != null) {
+                        String _address = _device.getAddress();
+                        // Update connection state by the same mac address.
+                        if (_address.equals(address)) {
+                            map.put(KEY_CONNECTION_STATE, state);
+                            mScanAdapter.notifyDataSetChanged();
                         }
                     }
-                    if (state == CONN_STATE_CONNECTED) {
-                        if (mConnectionDialog.isShowing()) mConnectionDialog.dismiss();
-                    }
+                }
+                if (state == CONN_STATE_CONNECTED) {
+                    if (mConnectionDialog.isShowing()) mConnectionDialog.dismiss();
                 }
             });
-            mSensorViewModel.getTagChangedDevice().observe(this, new Observer<XsensDotDevice>() {
-                @Override
-                public void onChanged(XsensDotDevice device) {
-                    String address = device.getAddress();
-                    String tag = device.getTag();
-                    mScanAdapter.updateTag(address, tag);
-                    mScanAdapter.notifyDataSetChanged();
-                    Log.d(TAG, "getTagChangedDevice() - address = " + address + ", tag = " + tag);
-                }
+            mSensorViewModel.getTagChangedDevice().observe(this, device -> {
+                String address = device.getAddress();
+                String tag = device.getTag();
+                mScanAdapter.updateTag(address, tag);
+                mScanAdapter.notifyDataSetChanged();
+                Log.d(TAG, "getTagChangedDevice() - address = " + address + ", tag = " + tag);
             });
             mSensorViewModel.setBatteryChangedCallback(this);
         }
@@ -289,12 +289,96 @@ public class ScanFragment extends Fragment implements XsensDotScannerCallback, S
         mScanAdapter.updateBattery(address, state, percentage);
         if (getActivity() != null) {
             // This event is coming from background thread, use UI thread to update item.
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    mScanAdapter.notifyDataSetChanged();
-                }
-            });
+            getActivity().runOnUiThread(() -> mScanAdapter.notifyDataSetChanged());
         }
+    }
+
+    /**
+     * Updates UI components according to the belt state and data.
+     */
+    private void updateUI() {
+        updateConnectionStateUI();
+        updateBatteryUI();
+    }
+
+    /**
+     * Updates connection state label.
+     */
+    private void updateConnectionStateUI() {
+        requireActivity().runOnUiThread(() -> {
+            // Connection state label
+            mBinding.feelSpaceConnectionStatusLabel.setText(
+                    navigationController.getConnectionState().toString());
+        });
+    }
+
+    /**
+     * Updates battery labels.
+     */
+    private void updateBatteryUI() {
+        requireActivity().runOnUiThread(() -> {
+            PowerStatus powerStatus = navigationController.getBeltPowerStatus();
+            if (powerStatus == null) {
+                mBinding.feelSpacePowerStatusLabel.setText("-");
+            } else {
+                mBinding.feelSpacePowerStatusLabel.setText(powerStatus.toString());
+            }
+            Integer batteryLevel = navigationController.getBeltBatteryLevel();
+            if (batteryLevel == null) {
+                mBinding.feelSpaceBatteryLevelLabel.setText("-");
+            } else {
+                mBinding.feelSpaceBatteryLevelLabel.setText(integerPercentFormat.format(batteryLevel));
+            }
+        });
+    }
+
+    public final void doToast(String msg) {
+        Toast.makeText(this.getContext(), msg, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onNavigationStateChanged(NavigationState state) {
+    }
+
+    @Override
+    public void onBeltHomeButtonPressed(boolean navigating) {
+    }
+
+    @Override
+    public void onBeltDefaultVibrationIntensityChanged(int intensity) {
+    }
+
+    @Override
+    public void onBeltOrientationUpdated(int beltHeading, boolean accurate) {
+    }
+
+    @Override
+    public void onBeltBatteryLevelUpdated(int batteryLevel, PowerStatus status) {
+        updateBatteryUI();
+    }
+
+    @Override
+    public void onCompassAccuracySignalStateUpdated(boolean enabled) {
+    }
+
+    @Override
+    public void onBeltConnectionStateChanged(BeltConnectionState state) {
+        Log.d(TAG, "verännderung?  " + state);
+        updateUI();
+    }
+
+    @Override
+    public void onBeltConnectionLost() {
+        doToast(getString(R.string.toast_connection_lost));
+    }
+
+    @Override
+    public void onBeltConnectionFailed() {
+        doToast(getString(R.string.toast_connection_failed));
+    }
+
+    @Override
+    public void onNoBeltFound() {
+        doToast(getString(R.string.toast_no_belt_found));
     }
 }

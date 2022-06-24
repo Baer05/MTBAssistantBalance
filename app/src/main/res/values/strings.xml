@@ -46,7 +46,15 @@
     <string name="file_already_exists">This file already exists. Please choose another name.</string>
 
     <string name="feel_space_connection">Belt Connection</string>
-    <string name="feel_space_search_and_connect_button">Search and connect</string>
     <string name="feel_space_connection_state">Belt Connection state:</string>
+    <string name="toast_bt_activation_rejected_text">BT activation has been rejected.</string>
+    <string name="toast_bt_activation_failed_text">BT activation failed.</string>
+    <string name="feel_space_battery_section_heading_text">Belt battery</string>
+    <string name="feel_space_power_status_heading_text">Power status:</string>
+    <string name="feel_space_battery_level_heading_text">Battery level:</string>
+    <string name="toast_connection_lost">Connection lost.</string>
+    <string name="toast_connection_failed">Connection failed.</string>
+    <string name="toast_scan_failed">Scan failed.</string>
+    <string name="toast_no_belt_found">No belt found.</string>
 
 </resources>
