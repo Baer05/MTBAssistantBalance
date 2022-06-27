@@ -67,12 +67,10 @@
         <item name="textAppearanceSubtitle1">@style/TextAppearance.App.Subtitle1</item>
         <item name="textAppearanceCaption">@style/TextAppearance.App.Caption</item>-->
         <item name="editTextStyle">@style/Widget.MaterialComponents.TextInputEditText.OutlinedBox</item>
-        <item name="android:layout_marginTop">@dimen/margin_small</item>
-        <item name="android:layout_marginLeft">@dimen/margin_large</item>
-        <item name="android:layout_marginRight">@dimen/margin_large</item>
+        <item name="android:layout_marginLeft">@dimen/margin_small</item>
+        <item name="android:layout_marginRight">@dimen/margin_small</item>
     </style>
 
-    <!-- DATEPICKER -->
 
     <!-- define your dialog theme -->
     <style name="DialogTheme" parent="Theme.MaterialComponents.DayNight.Dialog.MinWidth">

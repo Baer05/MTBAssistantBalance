@@ -9,7 +9,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -21,15 +20,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.xsens.dot.android.sdk.interfaces.XsensDotScannerCallback;
 import com.xsens.dot.android.sdk.utils.XsensDotScanner;
 
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import de.feelspace.fslib.BeltConnectionState;
-import de.feelspace.fslib.NavigationController;
-import de.feelspace.fslib.NavigationEventListener;
-import de.feelspace.fslib.NavigationState;
-import de.feelspace.fslib.PowerStatus;
 import mtb.assistant.balance.R;
 import mtb.assistant.balance.adapters.ScanAdapter;
 import mtb.assistant.balance.databinding.FragmentScanBinding;
@@ -54,7 +47,7 @@ import static mtb.assistant.balance.views.HomeActivity.FRAGMENT_TAG_SCAN;
  * A fragment for scanned item.
  */
 public class ScanFragment extends Fragment implements XsensDotScannerCallback, SensorClickInterface,
-        ScanClickInterface, BatteryChangedInterface, NavigationEventListener {
+        ScanClickInterface, BatteryChangedInterface {
 
     private static final String TAG = ScanFragment.class.getSimpleName();
 
@@ -67,10 +60,6 @@ public class ScanFragment extends Fragment implements XsensDotScannerCallback, S
     private XsensDotScanner mXsDotScanner;   // The XsensDotScanner object
     private boolean mIsScanning = false;     // A variable for scanning flag
     private AlertDialog mConnectionDialog;   // A dialog during the connection
-    private NavigationController navigationController;   // Belt navigation controller
-
-    // Formats
-    private static final DecimalFormat integerPercentFormat = new DecimalFormat("#0 '%'");
 
     /**
      * Get the instance of ScanFragment
@@ -95,7 +84,6 @@ public class ScanFragment extends Fragment implements XsensDotScannerCallback, S
         mBinding.toolbar.setTitle(getString(R.string.title_scan));
         ((AppCompatActivity) getActivity()).setSupportActionBar(mBinding.toolbar);
         // Retrieve the navigation controller
-        navigationController = new NavigationController(requireContext());
         return mBinding.getRoot();
     }
 
@@ -121,8 +109,6 @@ public class ScanFragment extends Fragment implements XsensDotScannerCallback, S
         // Notify main activity to refresh menu.
         HomeActivity.sCurrentFragment = FRAGMENT_TAG_SCAN;
         if (getActivity() != null) getActivity().invalidateOptionsMenu();
-        navigationController.addNavigationEventListener(this);
-        updateUI();
     }
 
     @Override
@@ -131,7 +117,6 @@ public class ScanFragment extends Fragment implements XsensDotScannerCallback, S
         // Stop scanning to let other apps to use scan function.
         if (mXsDotScanner != null) mXsDotScanner.stopScan();
         mBluetoothViewModel.updateScanState(false);
-        navigationController.removeNavigationEventListener(this);
     }
 
     @Override
@@ -152,7 +137,6 @@ public class ScanFragment extends Fragment implements XsensDotScannerCallback, S
             mScannedSensorList.clear();
             mScanAdapter.notifyDataSetChanged();
             mIsScanning = mXsDotScanner.startScan();
-            navigationController.searchAndConnectBelt();
         } else {
             // If success for stopping, it will return True from SDK. So use !(not) here.
             mIsScanning = !mXsDotScanner.stopScan();
@@ -291,93 +275,5 @@ public class ScanFragment extends Fragment implements XsensDotScannerCallback, S
             // This event is coming from background thread, use UI thread to update item.
             getActivity().runOnUiThread(() -> mScanAdapter.notifyDataSetChanged());
         }
-    }
-
-    /**
-     * Updates UI components according to the belt state and data.
-     */
-    private void updateUI() {
-        updateConnectionStateUI();
-        updateBatteryUI();
-    }
-
-    /**
-     * Updates connection state label.
-     */
-    private void updateConnectionStateUI() {
-        requireActivity().runOnUiThread(() -> {
-            // Connection state label
-            mBinding.feelSpaceConnectionStatusLabel.setText(
-                    navigationController.getConnectionState().toString());
-        });
-    }
-
-    /**
-     * Updates battery labels.
-     */
-    private void updateBatteryUI() {
-        requireActivity().runOnUiThread(() -> {
-            PowerStatus powerStatus = navigationController.getBeltPowerStatus();
-            if (powerStatus == null) {
-                mBinding.feelSpacePowerStatusLabel.setText("-");
-            } else {
-                mBinding.feelSpacePowerStatusLabel.setText(powerStatus.toString());
-            }
-            Integer batteryLevel = navigationController.getBeltBatteryLevel();
-            if (batteryLevel == null) {
-                mBinding.feelSpaceBatteryLevelLabel.setText("-");
-            } else {
-                mBinding.feelSpaceBatteryLevelLabel.setText(integerPercentFormat.format(batteryLevel));
-            }
-        });
-    }
-
-    public final void doToast(String msg) {
-        Toast.makeText(this.getContext(), msg, Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    public void onNavigationStateChanged(NavigationState state) {
-    }
-
-    @Override
-    public void onBeltHomeButtonPressed(boolean navigating) {
-    }
-
-    @Override
-    public void onBeltDefaultVibrationIntensityChanged(int intensity) {
-    }
-
-    @Override
-    public void onBeltOrientationUpdated(int beltHeading, boolean accurate) {
-    }
-
-    @Override
-    public void onBeltBatteryLevelUpdated(int batteryLevel, PowerStatus status) {
-        updateBatteryUI();
-    }
-
-    @Override
-    public void onCompassAccuracySignalStateUpdated(boolean enabled) {
-    }
-
-    @Override
-    public void onBeltConnectionStateChanged(BeltConnectionState state) {
-        updateUI();
-    }
-
-    @Override
-    public void onBeltConnectionLost() {
-        doToast(getString(R.string.toast_connection_lost));
-    }
-
-    @Override
-    public void onBeltConnectionFailed() {
-        doToast(getString(R.string.toast_connection_failed));
-    }
-
-    @Override
-    public void onNoBeltFound() {
-        doToast(getString(R.string.toast_no_belt_found));
     }
 }

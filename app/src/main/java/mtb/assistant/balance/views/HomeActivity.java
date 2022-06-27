@@ -185,21 +185,17 @@ public class HomeActivity extends AppCompatActivity {
      * Check the state of Bluetooth adapter and location permission.
      */
     private boolean checkBluetoothAndPermission() {
-
         boolean isBluetoothEnabled = Utils.isBluetoothAdapterEnabled(this);
         boolean isPermissionGranted = Utils.isLocationPermissionGranted(this);
         boolean isWritePermissionGranted = Utils.isWriteStoragePermissionGranted(this);
-
         if (isBluetoothEnabled) {
             if (!isPermissionGranted) Utils.requestLocationPermission(this, REQUEST_PERMISSION_LOCATION);
             if(!isWritePermissionGranted) Utils.requestWriteExternalStoragePermission(this, REQUEST_PERMISSION_EXTERNAL_STORAGE);
         } else {
             Utils.requestEnableBluetooth(this, REQUEST_ENABLE_BLUETOOTH);
         }
-
         boolean status = isBluetoothEnabled && isPermissionGranted;
         Log.i(TAG, "checkBluetoothAndPermission() - " + status);
-
         mBluetoothViewModel.updateBluetoothEnableState(status);
         return status;
     }
@@ -208,17 +204,13 @@ public class HomeActivity extends AppCompatActivity {
      * Initialize and observe view models.
      */
     private void bindViewModel() {
-
         mBluetoothViewModel = BluetoothViewModel.getInstance(this);
-
         mBluetoothViewModel.isScanning().observe(this, scanning -> {
             // If the status of scanning is changed, try to refresh the menu.
             mIsScanning = scanning;
             invalidateOptionsMenu();
         });
-
         mSensorViewModel = SensorViewModel.getInstance(this);
-
         mSensorViewModel.isStreaming().observe(this, status -> {
             // If the status of streaming is changed, try to refresh the menu.
             invalidateOptionsMenu();
@@ -231,7 +223,6 @@ public class HomeActivity extends AppCompatActivity {
      * @param listener The class which implemented ScanClickInterface
      */
     public void setScanTriggerListener(ScanClickInterface listener) {
-
         mScanListener = listener;
     }
 
@@ -241,7 +232,6 @@ public class HomeActivity extends AppCompatActivity {
      * @param listener The class which implemented StreamingClickInterface
      */
     public void setStreamingTriggerListener(StreamingClickInterface listener) {
-
         mStreamingListener = listener;
     }
 

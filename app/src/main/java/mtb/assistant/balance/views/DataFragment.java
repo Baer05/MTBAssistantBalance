@@ -13,6 +13,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
+import android.widget.SeekBar;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -34,13 +35,20 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
+import de.feelspace.fslib.BeltConnectionState;
+import de.feelspace.fslib.NavigationController;
+import de.feelspace.fslib.NavigationEventListener;
+import de.feelspace.fslib.NavigationState;
+import de.feelspace.fslib.PowerStatus;
 import mtb.assistant.balance.R;
 import mtb.assistant.balance.adapters.DataAdapter;
 import mtb.assistant.balance.databinding.FragmentDataBinding;
@@ -60,30 +68,31 @@ import static com.xsens.dot.android.sdk.models.XsensDotDevice.PLOT_STATE_ON;
 /**
  * A fragment for presenting the data and storing to file.
  */
-public class DataFragment extends Fragment implements StreamingClickInterface, DataChangeInterface, XsensDotSyncCallback {
+public class DataFragment extends Fragment implements StreamingClickInterface, DataChangeInterface, XsensDotSyncCallback, NavigationEventListener {
 
     private static final String TAG = DataFragment.class.getSimpleName();
-    // The code of request
-    private static final int SYNCING_REQUEST_CODE = 1001;
-    // The view binder of DataFragment
-    private FragmentDataBinding mBinding;
-    // The devices view model instance
-    private SensorViewModel mSensorViewModel;
-    // The adapter for data item
-    private DataAdapter mDataAdapter;
+    private static final int SYNCING_REQUEST_CODE = 1001;   // The code of request
+    private FragmentDataBinding mBinding;    // The view binder of DataFragment
+    private SensorViewModel mSensorViewModel;     // The devices view model instance
+    private DataAdapter mDataAdapter;   // The adapter for data item
     // A list contains tag and data from each sensor
     private final ArrayList<HashMap<String, Object>> mDataList = new ArrayList<>();
-    // A dialog during the synchronization
-    private AlertDialog mSyncingDialog;
+    private AlertDialog mSyncingDialog; // A dialog during the synchronization
     UdpClientHandler udpClientHandler;
     private UdpClientThread udpSocket;
     // create a List which contains String array
     List<String[]> data_one = new ArrayList<>();
     List<String[]> data_two = new ArrayList<>();
-    boolean isFirstDataArray = true;
-    private boolean isThreadRunning = false;
-    private Thread writeThread;
+    boolean isFirstDataArray = true;    // boolean decides which ArrayList will be used
+    private boolean isWriteThreadRunning = false;
+    private Thread writeThread;     // Thread for write to csv
+    private Thread beltThread;      // Thread search for belt
     private String fileName = "";
+    private NavigationController navigationController;   // Belt navigation controller
+
+    // Formats
+    private static final DecimalFormat integerPercentFormat = new DecimalFormat("#0 '%'");
+
 
     /**
      * Get the instance of DataFragment
@@ -107,9 +116,10 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         mBinding = FragmentDataBinding.inflate(LayoutInflater.from(getContext()));
         mBinding.toolbar.setTitle(getString(R.string.menu_start_streaming));
         ((AppCompatActivity) requireActivity()).setSupportActionBar(mBinding.toolbar);
-        mBinding.editCsvName.getText();
+        mBinding.editCsvTitle.getText();
         udpClientHandler = new UdpClientHandler(this);
         udpSocket = new UdpClientThread(udpClientHandler);
+        navigationController = new NavigationController(requireContext());
         return mBinding.getRoot();
     }
 
@@ -132,7 +142,28 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         });
         // Set the StreamingClickInterface instance to main activity.
         if (getActivity() != null) ((HomeActivity) getActivity()).setStreamingTriggerListener(this);
-        Log.d(TAG, String.valueOf(mBinding.editCsvName.getText()));
+
+        searchForBelt();
+        mBinding.feelSpaceSetIntensitySlider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+                mBinding.feelSpaceSetIntensityButton.setText(getString(
+                        R.string.feel_space_set_intensity_formatted_button_text,
+                        mBinding.feelSpaceSetIntensitySlider.getProgress() + 5));
+            }
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+            }
+        });
+        mBinding.feelSpaceSetIntensityButton.setOnClickListener(v -> {
+            if (navigationController.getConnectionState() == BeltConnectionState.STATE_CONNECTED) {
+                int intensity = mBinding.feelSpaceSetIntensitySlider.getProgress()+5;
+                navigationController.changeDefaultVibrationIntensity(intensity, true);
+            }
+        });
     }
 
     @Override
@@ -141,6 +172,14 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         // Notify main activity to refresh menu.
         HomeActivity.sCurrentFragment = FRAGMENT_TAG_DATA;
         if (getActivity() != null) getActivity().invalidateOptionsMenu();
+        navigationController.addNavigationEventListener(this);
+        updateUI();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        navigationController.removeNavigationEventListener(this);
     }
 
     @Override
@@ -154,7 +193,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
 
     @Override
     public void onStreamingTriggered() {
-        fileName = mBinding.editCsvName.getText().toString();
+        fileName = Objects.requireNonNull(mBinding.editCsvTitle.getText()).toString();
         if(TextUtils.isEmpty(fileName)) {
             doToast(getString(R.string.empty_file_name));
         } else {
@@ -248,7 +287,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
                         mSensorViewModel.updateStreamingStatus(true);
                         udpSocket.startUDPSocket();
                         data_one.add(new String[] {"Timestamp",  "S1", "S2", "q0", "q1", "q2", "q3", "ACCx", "ACCy", "ACCz"});
-                        mBinding.editCsvName.setFocusable(false);
+                        mBinding.editCsvTitle.setFocusable(false);
                         startWriteDataThread();
                     } else {
                         mBinding.syncResult.setText(R.string.sync_result_fail);
@@ -300,6 +339,22 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
                 mDataAdapter.notifyDataSetChanged();
             });
         }
+    }
+
+    private void searchForBelt(){
+        beltThread = new Thread(() -> {
+           if(navigationController.getConnectionState() == BeltConnectionState.STATE_DISCONNECTED) {
+                try {
+                    navigationController.searchAndConnectBelt();
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            } else {
+               beltThread.interrupt();
+           }
+        });
+        beltThread.start();
     }
 
     public final void doToast(String msg) {
@@ -362,9 +417,9 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
     }
 
     private void startWriteDataThread() {
-       isThreadRunning = true;
+       isWriteThreadRunning = true;
        writeThread = new Thread(() -> {
-          while (isThreadRunning) {
+          if(isWriteThreadRunning) {
               try {
                   Thread.sleep(10000);
                   writeDataAtOne();
@@ -377,13 +432,114 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
     }
 
     private void stopWriteDataThread() {
-        isThreadRunning = false;
+        isWriteThreadRunning = false;
         data_one.clear();
         data_two.clear();
         writeThread.interrupt();
-        mBinding.editCsvName.setFocusableInTouchMode(true);
-        mBinding.editCsvName.getText().clear();
+        mBinding.editCsvTitle.setFocusableInTouchMode(true);
+        Objects.requireNonNull(mBinding.editCsvTitle.getText()).clear();
         fileName = "";
+    }
+
+    /**
+     * Updates UI components according to the belt state and data.
+     */
+    private void updateUI() {
+        updateConnectionStateUI();
+        updateBatteryUI();
+        updateIntensityUI();
+    }
+
+    /**
+     * Updates connection state label.
+     */
+    private void updateConnectionStateUI() {
+        requireActivity().runOnUiThread(() -> {
+            // Connection state label
+            mBinding.feelSpaceConnectionStatusLabel.setText(
+                    navigationController.getConnectionState().toString());
+        });
+    }
+
+    /**
+     * Updates battery labels.
+     */
+    private void updateBatteryUI() {
+        requireActivity().runOnUiThread(() -> {
+            PowerStatus powerStatus = navigationController.getBeltPowerStatus();
+            if (powerStatus == null) {
+                mBinding.feelSpacePowerStatusLabel.setText("-");
+            } else {
+                mBinding.feelSpacePowerStatusLabel.setText(powerStatus.toString());
+            }
+            Integer batteryLevel = navigationController.getBeltBatteryLevel();
+            if (batteryLevel == null) {
+                mBinding.feelSpaceBatteryLevelLabel.setText("-");
+            } else {
+                mBinding.feelSpaceBatteryLevelLabel.setText(integerPercentFormat.format(batteryLevel));
+            }
+        });
+    }
+
+    /**
+     * Updates belt intensity label.
+     */
+    private void updateIntensityUI() {
+        requireActivity().runOnUiThread(() -> {
+            // Default intensity label
+            Integer intensity = navigationController.getDefaultVibrationIntensity();
+            if (intensity == null) {
+                mBinding.feelSpaceDefaultIntensityLabel.setText("-");
+            } else {
+                mBinding.feelSpaceDefaultIntensityLabel.setText(integerPercentFormat.format(intensity));
+            }
+        });
+    }
+
+    @Override
+    public void onNavigationStateChanged(NavigationState state) {
+    }
+
+    @Override
+    public void onBeltHomeButtonPressed(boolean navigating) {
+    }
+
+    @Override
+    public void onBeltDefaultVibrationIntensityChanged(int intensity) {
+        updateIntensityUI();
+    }
+
+    @Override
+    public void onBeltOrientationUpdated(int beltHeading, boolean accurate) {
+    }
+
+    @Override
+    public void onBeltBatteryLevelUpdated(int batteryLevel, PowerStatus status) {
+        updateBatteryUI();
+    }
+
+    @Override
+    public void onCompassAccuracySignalStateUpdated(boolean enabled) {
+    }
+
+    @Override
+    public void onBeltConnectionStateChanged(BeltConnectionState state) {
+        updateUI();
+    }
+
+    @Override
+    public void onBeltConnectionLost() {
+        doToast(getString(R.string.toast_connection_lost));
+    }
+
+    @Override
+    public void onBeltConnectionFailed() {
+        doToast(getString(R.string.toast_connection_failed));
+    }
+
+    @Override
+    public void onNoBeltFound() {
+        doToast(getString(R.string.toast_no_belt_found));
     }
 
     public static class UdpClientHandler extends Handler {
@@ -418,6 +574,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
                     } else {
                         parent.data_two.add(output);
                     }
+                    parent.navigationController.notifyWarning(true);
                 }
             }
         }

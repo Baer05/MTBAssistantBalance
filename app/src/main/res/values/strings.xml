@@ -56,5 +56,12 @@
     <string name="toast_connection_failed">Connection failed.</string>
     <string name="toast_scan_failed">Scan failed.</string>
     <string name="toast_no_belt_found">No belt found.</string>
+    <string name="feel_space_default_intensity_section_heading_text">Default vibration intensity</string>
+    <string name="feel_space_default_intensity_heading_text">Default intensity:</string>
+    <string name="feel_space_set_intensity_heading_text">Change intensity:</string>
+    <string name="feel_space_set_intensity_default_button_text">\u2192 \u0020\u002050%</string>
+    <string name="feel_space_set_intensity_formatted_button_text">\u2192 %d%%</string>
+    <string name="feel_space_search_and_connect_button_text">Search for Belt</string>
+    <string name="please_enter_a_file_name">Please enter a file name</string>
 
 </resources>
