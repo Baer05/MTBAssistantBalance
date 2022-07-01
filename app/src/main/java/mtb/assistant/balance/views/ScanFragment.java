@@ -146,7 +146,6 @@ public class ScanFragment extends Fragment implements XsensDotScannerCallback, S
 
     @Override
     public void onXsensDotScanned(BluetoothDevice device, int rssi) {
-        Log.i(TAG, "onXsensDotScanned() - Name: " + device.getName() + ", Address: " + device.getAddress());
         if (isAdded()) {
             // Use the mac address as UID to filter the same scan result.
             boolean isExist = false;
@@ -177,7 +176,7 @@ public class ScanFragment extends Fragment implements XsensDotScannerCallback, S
         mBluetoothViewModel.updateScanState(false);
         int state = mScanAdapter.getConnectionState(position);
         BluetoothDevice device = mScanAdapter.getDevice(position);
-        /**
+        /*
          * state = 0 : Disconnected
          * state = 1 : Connecting
          * state = 2 : Connected

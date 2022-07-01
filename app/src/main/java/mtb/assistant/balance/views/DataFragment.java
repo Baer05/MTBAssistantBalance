@@ -286,7 +286,8 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
                         // Notify the current streaming status to MainActivity to refresh the menu.
                         mSensorViewModel.updateStreamingStatus(true);
                         udpSocket.startUDPSocket();
-                        data_one.add(new String[] {"Timestamp",  "S1", "S2", "q0", "q1", "q2", "q3", "ACCx", "ACCy", "ACCz"});
+                        data_one.add(new String[] {"Timestamp",  "S1", "S2", "S3", "S4", "S5", "S6",
+                                "q0", "q1", "q2", "q3", "ACCx", "ACCy", "ACCz"});
                         mBinding.editCsvTitle.setFocusable(false);
                         startWriteDataThread();
                     } else {
@@ -419,7 +420,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
     private void startWriteDataThread() {
        isWriteThreadRunning = true;
        writeThread = new Thread(() -> {
-          if(isWriteThreadRunning) {
+          while(isWriteThreadRunning) {
               try {
                   Thread.sleep(10000);
                   writeDataAtOne();
@@ -562,19 +563,21 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
                 assert xsData != null;
                 float[] quaternions = xsData.getQuat();
                 float[] freeAcc = xsData.getFreeAcc();
-                if (intArray.length == 2 && quaternions.length == 4 && freeAcc.length == 3) {
+                if (intArray.length == 6 && quaternions.length == 4 && freeAcc.length == 3) {
                     String [] output = new String[] {DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").
                             format(LocalDateTime.now()), String.valueOf(intArray[0]), String.
-                            valueOf(intArray[1]), String.valueOf(quaternions[0]), String.
-                            valueOf(quaternions[1]), String.valueOf(quaternions[2]), String.
-                            valueOf(quaternions[3]), String.valueOf(freeAcc[0]), String.
-                            valueOf(freeAcc[1]), String.valueOf(freeAcc[2])};
+                            valueOf(intArray[1]), String.valueOf(intArray[2]),
+                            String.valueOf(intArray[3]), String.valueOf(intArray[4]),
+                            String.valueOf(intArray[5]), String.valueOf(quaternions[0]),
+                            String.valueOf(quaternions[1]), String.valueOf(quaternions[2]),
+                            String.valueOf(quaternions[3]), String.valueOf(freeAcc[0]),
+                            String.valueOf(freeAcc[1]), String.valueOf(freeAcc[2])};
                     if(parent.isFirstDataArray) {
                         parent.data_one.add(output);
                     } else {
                         parent.data_two.add(output);
                     }
-                    parent.navigationController.notifyWarning(true);
+                    //parent.navigationController.notifyWarning(true);
                 }
             }
         }
