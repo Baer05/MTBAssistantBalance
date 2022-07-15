@@ -39,6 +39,7 @@ import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -89,6 +90,8 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
     private Thread beltThread;      // Thread search for belt
     private String fileName = "";
     private NavigationController navigationController;   // Belt navigation controller
+    private boolean firstToHighValue = false;
+    private long firstToHighTimestamp = 0;
 
     // Formats
     private static final DecimalFormat integerPercentFormat = new DecimalFormat("#0 '%'");
@@ -577,7 +580,22 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
                     } else {
                         parent.data_two.add(output);
                     }
-                    //parent.navigationController.notifyWarning(true);
+                    long currentTimestamp = 0;
+                    for(int i = 0; i < values.length; i++) {
+                        intArray[i] = Integer.parseInt(values[i]);
+                        if(intArray[i] > 3500) {
+                            parent.firstToHighTimestamp = new Date().getTime();
+                            currentTimestamp = new Date().getTime();
+                            break;
+                        }
+                    }
+                    if(currentTimestamp - parent.firstToHighTimestamp >= 2) {
+                        //parent.navigationController.notifyWarning(true);
+                        Log.d(TAG, "value over two seconds to high");
+                    } else {
+                        parent.firstToHighTimestamp = 0;
+                    }
+
                 }
             }
         }
