@@ -214,6 +214,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         XsensDotSyncManager.getInstance(this).stopSyncing();
         udpSocket.stopUDPSocket();
         stopWriteDataThread();
+        // after stop the tracking, go to the statistic activity and show statistic with measured data
         Intent intent = new Intent(getActivity(), PieChartActivity.class);
         intent.putExtra("collectedData", new Gson().toJson(collected_data));
         intent.putExtra("threshold", 300);
@@ -300,7 +301,9 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
             mSensorViewModel.setMeasurement(true);
             // Notify the current streaming status to MainActivity to refresh the menu.
             mSensorViewModel.updateStreamingStatus(true);
+            // start listening for udp packages from microcontroller
             udpSocket.startUDPSocket();
+            // set the header for the csv file
             data_one.add(new String[]{"Timestamp", "S1", "S2", "S3", "S4", "S5", "S6",
                 "q0", "q1", "q2", "q3", "ACCx", "ACCy", "ACCz"});
             mBinding.editCsvTitle.setFocusable(false);
@@ -357,6 +360,10 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
     }
   }
 
+  /**
+   * function that, if no belt is connected, searches for a belt every second with the help of a thread.
+   * If a belt is found and connected, this thread will be interrupted
+   */
   private void searchForBelt() {
     beltThread = new Thread(() -> {
       if (navigationController.getConnectionState() == BeltConnectionState.STATE_DISCONNECTED) {
@@ -377,6 +384,10 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
     Toast.makeText(this.getContext(), msg, Toast.LENGTH_SHORT).show();
   }
 
+  /**
+   * Checks whether writing to ExternalStorage is allowed
+   * @return boolean
+   */
   private boolean checkExternalMedia() {
     boolean mExternalStorageWriteable;
     String state = Environment.getExternalStorageState();
@@ -393,6 +404,11 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
     return mExternalStorageWriteable;
   }
 
+  /**
+   * This function checks whether there is already a file with this name in the directory and
+   * returns true if the file already exists, false otherwise
+   * @return boolean
+   */
   private boolean checkIfFileExist() {
     String csvName = fileName + ".csv";
     Path path = Paths.get(android.os.Environment.getExternalStorageDirectory().
@@ -400,6 +416,11 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
     return Files.exists(path);
   }
 
+  /**
+   * (1)
+   * If permission to write to ExternalStorage and a name for the file are given, a csv file with
+   * the collected data will be created
+   */
   public void writeDataAtOne() {
     try {
       if (checkExternalMedia() && !TextUtils.isEmpty(fileName)) {
@@ -432,6 +453,9 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
     }
   }
 
+  /**
+   * Thread executes the write function, see 1, every 10 seconds
+   */
   private void startWriteDataThread() {
     isWriteThreadRunning = true;
     writeThread = new Thread(() -> {
@@ -447,6 +471,9 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
     writeThread.start();
   }
 
+  /**
+   * Thread is interrupted and all variables are reset
+   */
   private void stopWriteDataThread() {
     isWriteThreadRunning = false;
     data_one.clear();
@@ -558,6 +585,10 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
     doToast(getString(R.string.toast_no_belt_found));
   }
 
+
+  /**
+   * Handler class is used to handle receiving UDP packets
+   */
   public static class UdpClientHandler extends Handler {
     private final DataFragment parent;
 
@@ -566,6 +597,14 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
       this.parent = parent;
     }
 
+    /**
+     * In this function, the data is processed and built into a string together with the data read
+     * from the XSens sensor. This String is then added to an Array List. If one of the received
+     * values is too high and that lasts two seconds and a vibration belt is connected, the user
+     * will be given feedback with a vibration belt
+     * @param msg This parameter contains an object containing a string with the
+     * data received from the microcontroller
+     */
     @Override
     public void handleMessage(Message msg) {
       parent.doToast(msg.obj.toString());
