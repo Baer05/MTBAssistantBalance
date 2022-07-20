@@ -64,4 +64,8 @@
     <string name="feel_space_search_and_connect_button_text">Search for Belt</string>
     <string name="please_enter_a_file_name">Please enter a file name</string>
 
+    <string name="dash">-</string>
+    <string name="go_back">Go back</string>
+    <string name="stats">Balance Statistic</string>
+
 </resources>

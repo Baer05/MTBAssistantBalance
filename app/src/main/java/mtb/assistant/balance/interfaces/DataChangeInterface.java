@@ -7,11 +7,11 @@ import com.xsens.dot.android.sdk.events.XsensDotData;
  */
 public interface DataChangeInterface {
 
-    /**
-     * This function will be triggered when data is changed.
-     *
-     * @param address The mac address of device
-     * @param data    The XsensDotData packet
-     */
-    void onDataChanged(String address, XsensDotData data);
+  /**
+   * This function will be triggered when data is changed.
+   *
+   * @param address The mac address of device
+   * @param data    The XsensDotData packet
+   */
+  void onDataChanged(String address, XsensDotData data);
 }

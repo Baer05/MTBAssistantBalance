@@ -42,55 +42,55 @@ import androidx.lifecycle.ViewModelStoreOwner;
  */
 public class BluetoothViewModel extends ViewModel {
 
-    private static final String TAG = BluetoothViewModel.class.getSimpleName();
-    // A variable to notify the Bluetooth status
-    private MutableLiveData<Boolean> mIsBluetoothEnabled = new MutableLiveData<>();
-    // A variable to notify the scanning status
-    private MutableLiveData<Boolean> mIsScanning = new MutableLiveData<>();
+  private static final String TAG = BluetoothViewModel.class.getSimpleName();
+  // A variable to notify the Bluetooth status
+  private MutableLiveData<Boolean> mIsBluetoothEnabled = new MutableLiveData<>();
+  // A variable to notify the scanning status
+  private MutableLiveData<Boolean> mIsScanning = new MutableLiveData<>();
 
-    /**
-     * Get the instance of BluetoothViewModel
-     *
-     * @param owner The life cycle owner from activity/fragment
-     * @return The BluetoothViewModel
-     */
-    public static BluetoothViewModel getInstance(@NonNull ViewModelStoreOwner owner) {
-        return new ViewModelProvider(owner, new ViewModelProvider.NewInstanceFactory()).get(BluetoothViewModel.class);
-    }
+  /**
+   * Get the instance of BluetoothViewModel
+   *
+   * @param owner The life cycle owner from activity/fragment
+   * @return The BluetoothViewModel
+   */
+  public static BluetoothViewModel getInstance(@NonNull ViewModelStoreOwner owner) {
+    return new ViewModelProvider(owner, new ViewModelProvider.NewInstanceFactory()).get(BluetoothViewModel.class);
+  }
 
-    /**
-     * Observe this function to listen the status of Bluetooth adapter.
-     *
-     * @return The latest status
-     */
-    public MutableLiveData<Boolean> isBluetoothEnabled() {
-        return mIsBluetoothEnabled;
-    }
+  /**
+   * Observe this function to listen the status of Bluetooth adapter.
+   *
+   * @return The latest status
+   */
+  public MutableLiveData<Boolean> isBluetoothEnabled() {
+    return mIsBluetoothEnabled;
+  }
 
-    /**
-     * Notify the Bluetooth adapter status to activity/fragment
-     *
-     * @param enabled he status of Bluetooth
-     */
-    public void updateBluetoothEnableState(boolean enabled) {
-        mIsBluetoothEnabled.postValue(enabled);
-    }
+  /**
+   * Notify the Bluetooth adapter status to activity/fragment
+   *
+   * @param enabled he status of Bluetooth
+   */
+  public void updateBluetoothEnableState(boolean enabled) {
+    mIsBluetoothEnabled.postValue(enabled);
+  }
 
-    /**
-     * Observe this function to listen the scanning status.
-     *
-     * @return The latest scan status
-     */
-    public MutableLiveData<Boolean> isScanning() {
-        return mIsScanning;
-    }
+  /**
+   * Observe this function to listen the scanning status.
+   *
+   * @return The latest scan status
+   */
+  public MutableLiveData<Boolean> isScanning() {
+    return mIsScanning;
+  }
 
-    /**
-     * Notify the scan status to activity/fragment
-     *
-     * @param scanning The status of scanning
-     */
-    public void updateScanState(boolean scanning) {
-        mIsScanning.postValue(scanning);
-    }
+  /**
+   * Notify the scan status to activity/fragment
+   *
+   * @param scanning The status of scanning
+   */
+  public void updateScanState(boolean scanning) {
+    mIsScanning.postValue(scanning);
+  }
 }
