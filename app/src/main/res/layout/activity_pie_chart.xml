@@ -7,7 +7,19 @@
         android:id="@+id/chart1"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/go_back" />
+        android:layout_above="@+id/save_chart" />
+
+    <Button
+        android:id="@+id/save_chart"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/go_back"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginLeft="@dimen/margin_small"
+        android:layout_marginRight="@dimen/margin_small"
+        android:layout_marginBottom="50dp"
+        android:text="@string/save" />
 
     <Button
         android:id="@+id/go_back"

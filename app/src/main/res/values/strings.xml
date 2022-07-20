@@ -67,5 +67,6 @@
     <string name="dash">-</string>
     <string name="go_back">Go back</string>
     <string name="stats">Balance Statistic</string>
+    <string name="save">Save Statistic</string>
 
 </resources>

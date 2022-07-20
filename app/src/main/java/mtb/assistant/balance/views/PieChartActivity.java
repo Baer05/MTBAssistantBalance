@@ -8,10 +8,13 @@ import android.text.style.ForegroundColorSpan;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StyleSpan;
 import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.github.mikephil.charting.animation.Easing;
+import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.components.Legend;
 import com.github.mikephil.charting.data.PieData;
@@ -84,6 +87,14 @@ public class PieChartActivity extends AppCompatActivity {
     chart.setEntryLabelTypeface(tfRegular);
     chart.setEntryLabelTextSize(12f);
     setData();
+    Button onSave = findViewById(R.id.save_chart);
+    onSave.setOnClickListener(v -> {
+      saveToGallery(chart, getIntent().getExtras().getString("fileName"));
+    });
+    Button goBack = findViewById(R.id.go_back);
+    goBack.setOnClickListener(v -> {
+      super.onBackPressed();
+    });
   }
 
   private void setData() {
@@ -189,5 +200,16 @@ public class PieChartActivity extends AppCompatActivity {
     s.setSpan(new StyleSpan(Typeface.NORMAL), 0, s.length(), 0);
     s.setSpan(new ForegroundColorSpan(Color.GRAY), 0, s.length(), 0);
     return s;
+  }
+
+  private void saveToGallery(Chart chart, String name) {
+    if (chart.saveToGallery(name + "_" + System.currentTimeMillis(), 70)) {
+      Toast.makeText(getApplicationContext(), "Saving SUCCESSFUL!",
+          Toast.LENGTH_SHORT).show();
+      super.onBackPressed();
+    } else {
+      Toast.makeText(getApplicationContext(), "Saving FAILED!", Toast.LENGTH_SHORT)
+          .show();
+    }
   }
 }

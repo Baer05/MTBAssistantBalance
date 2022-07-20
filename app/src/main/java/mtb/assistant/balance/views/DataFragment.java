@@ -217,6 +217,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         Intent intent = new Intent(getActivity(), PieChartActivity.class);
         intent.putExtra("collectedData", new Gson().toJson(collected_data));
         intent.putExtra("threshold", 300);
+        intent.putExtra("fileName", fileName);
         startActivity(intent);
       } else if (checkIfFileExist()) {
         doToast(getString(R.string.file_already_exists));
