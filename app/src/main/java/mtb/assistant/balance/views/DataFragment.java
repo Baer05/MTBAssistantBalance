@@ -8,7 +8,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
-import android.os.Parcelable;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -35,7 +34,6 @@ import com.xsens.dot.android.sdk.models.XsensDotSyncManager;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -94,9 +92,8 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
   private Thread beltThread;      // Thread search for belt
   private String fileName = "";
   private NavigationController navigationController;   // Belt navigation controller
-  private boolean firstToHighValue = false;
   private long firstToHighTimestamp = 0;
-  List<int[]> collected_data = new ArrayList<int[]>();
+  List<int[]> collected_data = new ArrayList<>();
 
   // Formats
   private static final DecimalFormat integerPercentFormat = new DecimalFormat("#0 '%'");
