@@ -5,12 +5,9 @@
 WiFiUDP udp;
 
 // configuration variables for nnetwork and udp
-const char* SSID = "BaerTaHome";            //  your network SSID (name)
-const char* WiFiPassword = "77478940435180061509";  // your network password (use for WPA, or use as key for WEP)
-const char* ip = "192.168.178.255"; //ip address of local pc
-//const char* ssid = "MtbAssistant"; //  your network SSID (name)
-//const char* pass = "b33c8e7879bd";    // your network password (use for WPA, or use as key for WEP)
-//const char* ip = "10.138.87.236";   //ip address of mobile phone with sim card
+const char* SSID = "MtbAssistant"; //  your network SSID (name)
+const char* WiFiPassword = "4b5c4f9f55ae";    // your network password (use for WPA, or use as key for WEP)
+const char* IP = "255.255.255.255";   //ip address of mobile phone with sim card
 
 const int udpPort = 18600;  // udp port
 //Are we currently connected?
@@ -20,6 +17,7 @@ boolean connected = false;
 void setup() {
   //Initialize serial and wait for port to open:
   Serial.begin(115200);
+  WiFi.mode(WIFI_STA);
   //Connect to the WiFi network
   connectToWiFi(SSID, WiFiPassword);
 
@@ -78,8 +76,7 @@ void loop() {
         Serial.print('\n');
       }
 
-      char cstr[16];
-      String forceValue = itoa(sensorReading, cstr, 10);
+      String forceValue = String(vout, 2);
       String helper = ",";
       strcat(sensorValues, forceValue.c_str());
       if (thisSensor != 5) {
@@ -87,7 +84,7 @@ void loop() {
       }
     }
     // send a reply, to the IP address and port that sent us the packet we received
-    udp.beginPacket(ip, udpPort);
+    udp.beginPacket(IP, udpPort);
     udp.printf(sensorValues);
     udp.endPacket();
   }
