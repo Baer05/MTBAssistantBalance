@@ -37,7 +37,9 @@ public class HomeActivity extends AppCompatActivity {
   // The code of request
   private static final int REQUEST_ENABLE_BLUETOOTH = 1001,
       REQUEST_PERMISSION_LOCATION = 1002,
-      REQUEST_PERMISSION_EXTERNAL_STORAGE = 23;
+      REQUEST_PERMISSION_EXTERNAL_STORAGE = 23,
+      BLUETOOTH_PERMISSION_REQUEST_CODE = 9999;
+
   // The tag of fragments
   public static final String FRAGMENT_TAG_SCAN = "scan", FRAGMENT_TAG_DATA = "data";
   // The view binder of MainActivity
@@ -188,9 +190,12 @@ public class HomeActivity extends AppCompatActivity {
    */
   private boolean checkBluetoothAndPermission() {
     boolean isBluetoothEnabled = Utils.isBluetoothAdapterEnabled(this);
+    boolean isBluetoothPermissionGranted = Utils.isBlePermissionGranted(this);
+    Log.d(TAG, String.valueOf(isBluetoothPermissionGranted));
     boolean isPermissionGranted = Utils.isLocationPermissionGranted(this);
     boolean isWritePermissionGranted = Utils.isWriteStoragePermissionGranted(this);
     if (isBluetoothEnabled) {
+      if (!isBluetoothPermissionGranted) Utils.requestBlePermission(this, BLUETOOTH_PERMISSION_REQUEST_CODE);
       if (!isPermissionGranted) Utils.requestLocationPermission(this, REQUEST_PERMISSION_LOCATION);
       if (!isWritePermissionGranted)
         Utils.requestWriteExternalStoragePermission(this, REQUEST_PERMISSION_EXTERNAL_STORAGE);

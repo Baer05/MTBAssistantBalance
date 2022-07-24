@@ -60,6 +60,8 @@
 
     <style name="Widget.App.TextInputLayout" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
         <item name="hintTextColor">?attr/colorOnSurface</item>
+        <item name="boxStrokeColor">?attr/colorOnSurface</item>
+        <item name="boxStrokeErrorColor">?attr/colorError</item>
         <item name="colorPrimary">?attr/colorPrimary</item>
         <item name="colorOnSurface">?attr/colorOnPrimary</item>
         <item name="colorError">?attr/colorError</item>

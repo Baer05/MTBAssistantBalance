@@ -93,7 +93,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
   private String fileName = "";
   private NavigationController navigationController;   // Belt navigation controller
   private long firstToHighTimestamp = 0;
-  List<int[]> collected_data = new ArrayList<>();
+  List<float[]> collected_data = new ArrayList<>();
 
   // Formats
   private static final DecimalFormat integerPercentFormat = new DecimalFormat("#0 '%'");
@@ -214,7 +214,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         // after stop the tracking, go to the statistic activity and show statistic with measured data
         Intent intent = new Intent(getActivity(), PieChartActivity.class);
         intent.putExtra("collectedData", new Gson().toJson(collected_data));
-        intent.putExtra("threshold", 300);
+        intent.putExtra("threshold", 2.0);
         intent.putExtra("fileName", fileName);
         startActivity(intent);
       } else if (checkIfFileExist()) {
@@ -382,34 +382,15 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
   }
 
   /**
-   * Checks whether writing to ExternalStorage is allowed
-   * @return boolean
-   */
-  private boolean checkExternalMedia() {
-    boolean mExternalStorageWriteable;
-    String state = Environment.getExternalStorageState();
-    if (Environment.MEDIA_MOUNTED.equals(state)) {
-      // Can read and write the media
-      mExternalStorageWriteable = true;
-    } else if (Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
-      // Can only read the media
-      mExternalStorageWriteable = false;
-    } else {
-      // Can't read or write
-      mExternalStorageWriteable = false;
-    }
-    return mExternalStorageWriteable;
-  }
-
-  /**
    * This function checks whether there is already a file with this name in the directory and
    * returns true if the file already exists, false otherwise
+   *
    * @return boolean
    */
   private boolean checkIfFileExist() {
     String csvName = fileName + ".csv";
-    Path path = Paths.get(android.os.Environment.getExternalStorageDirectory().
-        getAbsolutePath() + "/MTBAssistantRecording/" + csvName);
+    Path path = Paths.get(getContext().getFilesDir().getAbsolutePath() +
+        "/MTBAssistantRecording/" + csvName);
     return Files.exists(path);
   }
 
@@ -420,10 +401,9 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
    */
   public void writeDataAtOne() {
     try {
-      if (checkExternalMedia() && !TextUtils.isEmpty(fileName)) {
+      if (!TextUtils.isEmpty(fileName)) {
         // first create file object for file placed at location
-        File root = android.os.Environment.getExternalStorageDirectory();
-        File dir = new File(root.getAbsolutePath() + "/MTBAssistantRecording");
+        File dir = new File(getContext().getFilesDir(), "MTBAssistantRecording");
         if (!dir.exists()) {
           boolean wasSuccessful = dir.mkdirs();
         }
@@ -599,29 +579,30 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
      * from the XSens sensor. This String is then added to an Array List. If one of the received
      * values is too high and that lasts two seconds and a vibration belt is connected, the user
      * will be given feedback with a vibration belt
+     *
      * @param msg This parameter contains an object containing a string with the
-     * data received from the microcontroller
+     *            data received from the microcontroller
      */
     @Override
     public void handleMessage(Message msg) {
       parent.doToast(msg.obj.toString());
       String[] values = msg.obj.toString().split(",");
-      int[] intArray = new int[values.length];
+      float[] floatArray = new float[values.length];
       for (int i = 0; i < values.length; i++) {
-        intArray[i] = Integer.parseInt(values[i]);
+        floatArray[i] = Float.parseFloat(values[i]);
       }
-      parent.collected_data.add(intArray);
+      parent.collected_data.add(floatArray);
       if (parent.mDataList.size() > 0) {
         XsensDotData xsData = (XsensDotData) parent.mDataList.get(parent.mDataList.size() - 1).get(KEY_DATA);
         assert xsData != null;
         float[] quaternions = xsData.getQuat();
         float[] freeAcc = xsData.getFreeAcc();
-        if (intArray.length == 6 && quaternions.length == 4 && freeAcc.length == 3) {
+        if (floatArray.length == 6 && quaternions.length == 4 && freeAcc.length == 3) {
           String[] output = new String[]{DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").
-              format(LocalDateTime.now()), String.valueOf(intArray[0]), String.
-              valueOf(intArray[1]), String.valueOf(intArray[2]),
-              String.valueOf(intArray[3]), String.valueOf(intArray[4]),
-              String.valueOf(intArray[5]), String.valueOf(quaternions[0]),
+              format(LocalDateTime.now()), String.valueOf(floatArray[0]), String.
+              valueOf(floatArray[1]), String.valueOf(floatArray[2]),
+              String.valueOf(floatArray[3]), String.valueOf(floatArray[4]),
+              String.valueOf(floatArray[5]), String.valueOf(quaternions[0]),
               String.valueOf(quaternions[1]), String.valueOf(quaternions[2]),
               String.valueOf(quaternions[3]), String.valueOf(freeAcc[0]),
               String.valueOf(freeAcc[1]), String.valueOf(freeAcc[2])};
@@ -632,8 +613,8 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
           }
           long currentTimestamp = 0;
           for (int i = 0; i < values.length; i++) {
-            intArray[i] = Integer.parseInt(values[i]);
-            if (intArray[i] > 3500) {
+            floatArray[i] = Float.parseFloat(values[i]);
+            if (floatArray[i] > 3500) {
               parent.firstToHighTimestamp = new Date().getTime();
               currentTimestamp = new Date().getTime();
               break;

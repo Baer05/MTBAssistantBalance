@@ -100,10 +100,10 @@ public class PieChartActivity extends AppCompatActivity {
   private void setData() {
     String collectedDataString = getIntent().getStringExtra("collectedData");
     Gson gson = new Gson();
-    Type type = new TypeToken<List<int[]>>() {
+    Type type = new TypeToken<List<float[]>>() {
     }.getType();
-    List<int[]> collectedData = gson.fromJson(collectedDataString, type);
-    int threshold = getIntent().getExtras().getInt("threshold");
+    List<float[]> collectedData = gson.fromJson(collectedDataString, type);
+    double threshold = getIntent().getExtras().getDouble("threshold");
     int perfect = 0;
     int left = 0;
     int right = 0;
@@ -112,9 +112,9 @@ public class PieChartActivity extends AppCompatActivity {
     for (int i = 0; i < collectedData.size(); i++) {
       boolean isTop = false;
       boolean isBottom = false;
-      List<Integer> values = new ArrayList<>();
+      List<Float> values = new ArrayList<>();
       for (int x = 0; x < collectedData.get(i).length; x++) {
-        int value = collectedData.get(i)[x];
+        float value = collectedData.get(i)[x];
         values.add(value);
         if (value > threshold) {
           switch (x) {
@@ -134,14 +134,16 @@ public class PieChartActivity extends AppCompatActivity {
       if (values.get(0) > values.get(3) || values.get(0) > values.get(4) || values.get(0) > values.get(5) ||
           values.get(1) > values.get(3) || values.get(1) > values.get(4) || values.get(1) > values.get(5) ||
           values.get(2) > values.get(3) || values.get(2) > values.get(4) || values.get(2) > values.get(5)) {
-        if (values.get(3) < threshold && values.get(4) < threshold && values.get(5) < threshold) {
+        if (values.get(3) < threshold && values.get(4) < threshold && values.get(5) < threshold &&
+            (values.get(0) > threshold || values.get(1) > threshold || values.get(2) > threshold)) {
           left += 1;
         }
       }
       if (values.get(3) > values.get(0) || values.get(3) > values.get(1) || values.get(3) > values.get(2) ||
           values.get(4) > values.get(0) || values.get(4) > values.get(1) || values.get(4) > values.get(2) ||
           values.get(5) > values.get(0) || values.get(5) > values.get(1) || values.get(5) > values.get(2)) {
-        if (values.get(0) < threshold && values.get(1) < threshold && values.get(2) < threshold) {
+        if (values.get(0) < threshold && values.get(1) < threshold && values.get(2) < threshold &&
+            (values.get(3) > threshold || values.get(4) > threshold || values.get(5) > threshold)) {
           right += 1;
         }
       }

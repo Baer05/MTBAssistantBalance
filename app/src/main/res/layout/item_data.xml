@@ -12,6 +12,7 @@
         android:layout_height="wrap_content"
         android:text="@string/name"
         android:textStyle="bold"
+        android:textColor="@color/material_dynamic_neutral0"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -19,6 +20,7 @@
         android:id="@+id/sensor_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:textColor="@color/material_dynamic_neutral0"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/sensor_name_label" />
@@ -29,6 +31,7 @@
         android:layout_height="wrap_content"
         android:text="@string/orientation"
         android:textStyle="bold"
+        android:textColor="@color/material_dynamic_neutral0"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/sensor_name" />
 
@@ -38,6 +41,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="4dp"
         android:layout_marginTop="4dp"
+        android:textColor="@color/material_dynamic_neutral0"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/orientation_label" />
@@ -48,6 +52,7 @@
         android:layout_height="wrap_content"
         android:text="@string/free_acc"
         android:textStyle="bold"
+        android:textColor="@color/material_dynamic_neutral0"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/orientation_data" />
 
@@ -56,6 +61,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
+        android:textColor="@color/material_dynamic_neutral0"
         app:layout_constraintEnd_toEndOf="@+id/view"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/free_acc_label" />

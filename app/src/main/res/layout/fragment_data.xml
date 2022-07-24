@@ -40,6 +40,7 @@
             android:layout_height="wrap_content"
             android:text="@string/mode"
             android:textStyle="bold"
+            android:textColor="@color/material_dynamic_neutral0"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -49,6 +50,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
             android:text="@string/mode_complete_euler"
+            android:textColor="@color/material_dynamic_neutral0"
             app:layout_constraintBottom_toBottomOf="@+id/mode_label"
             app:layout_constraintStart_toEndOf="@+id/mode_label" />
 
@@ -59,6 +61,7 @@
             android:layout_marginTop="4dp"
             android:text="@string/sync_status"
             android:textStyle="bold"
+            android:textColor="@color/material_dynamic_neutral0"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintStart_toStartOf="@+id/mode_label"
             app:layout_constraintTop_toBottomOf="@+id/mode_label" />
@@ -69,6 +72,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
             android:text="-"
+            android:textColor="@color/material_dynamic_neutral0"
             app:layout_constraintBottom_toBottomOf="@+id/sync_label"
             app:layout_constraintStart_toEndOf="@+id/sync_label"
             tools:ignore="HardcodedText" />
@@ -101,6 +105,8 @@
                 android:layout_height="wrap_content"
                 android:autofillHints=""
                 android:hint="@string/please_enter_a_file_name"
+                android:textColorHint="@color/material_dynamic_neutral0"
+                android:textColor="@color/material_dynamic_neutral0"
                 android:inputType="text" />
 
         </com.google.android.material.textfield.TextInputLayout>
@@ -114,6 +120,7 @@
             android:layout_marginBottom="@dimen/margin_small"
             android:textAppearance="@android:style/TextAppearance.Small"
             android:textStyle="bold"
+            android:textColor="@color/material_dynamic_neutral0"
             app:layout_constraintBottom_toTopOf="@id/connection_state_box" />
 
         <!-- Connection state label -->
@@ -129,13 +136,15 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textAppearance="@android:style/TextAppearance.Small" />
+                android:textAppearance="@android:style/TextAppearance.Small"
+                android:textColor="@color/material_dynamic_neutral0"/>
             <TextView
                 android:id="@+id/feel_space_connection_status_label"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textAppearance="@android:style/TextAppearance.Small"/>
+                android:textAppearance="@android:style/TextAppearance.Small"
+                android:textColor="@color/material_dynamic_neutral0"/>
         </LinearLayout>
 
         <!-- Section: Default vibration intensity -->
@@ -147,6 +156,7 @@
             android:layout_marginBottom="@dimen/margin_small"
             android:textAppearance="@android:style/TextAppearance.Small"
             android:textStyle="bold"
+            android:textColor="@color/material_dynamic_neutral0"
             app:layout_constraintBottom_toTopOf="@id/default_intensity_box" />
 
         <!-- Default intensity -->
@@ -162,13 +172,15 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textAppearance="@android:style/TextAppearance.Small"/>
+                android:textAppearance="@android:style/TextAppearance.Small"
+                android:textColor="@color/material_dynamic_neutral0"/>
             <TextView
                 android:id="@+id/feel_space_default_intensity_label"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textAppearance="@android:style/TextAppearance.Small" />
+                android:textAppearance="@android:style/TextAppearance.Small"
+                android:textColor="@color/material_dynamic_neutral0"/>
         </LinearLayout>
 
         <!-- Default intensity slider -->
@@ -178,6 +190,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/margin_small"
+            android:textColor="@color/material_dynamic_neutral0"
             android:textAppearance="@android:style/TextAppearance.Small"
             app:layout_constraintBottom_toTopOf="@id/slider_box"/>
 
@@ -212,6 +225,7 @@
             android:layout_marginBottom="@dimen/margin_small"
             android:textAppearance="@android:style/TextAppearance.Small"
             android:textStyle="bold"
+            android:textColor="@color/material_dynamic_neutral0"
             app:layout_constraintBottom_toTopOf="@id/power_status"/>
 
         <!-- Power status -->
@@ -227,13 +241,15 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textAppearance="@android:style/TextAppearance.Small" />
+                android:textAppearance="@android:style/TextAppearance.Small"
+                android:textColor="@color/material_dynamic_neutral0"/>
             <TextView
                 android:id="@+id/feel_space_power_status_label"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textAppearance="@android:style/TextAppearance.Small" />
+                android:textAppearance="@android:style/TextAppearance.Small"
+                android:textColor="@color/material_dynamic_neutral0"/>
         </LinearLayout>
 
         <!-- Battery level -->
@@ -249,13 +265,15 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textAppearance="@android:style/TextAppearance.Small" />
+                android:textAppearance="@android:style/TextAppearance.Small"
+                android:textColor="@color/material_dynamic_neutral0"/>
             <TextView
                 android:id="@+id/feel_space_battery_level_label"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textAppearance="@android:style/TextAppearance.Small" />
+                android:textAppearance="@android:style/TextAppearance.Small"
+                android:textColor="@color/material_dynamic_neutral0"/>
         </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
