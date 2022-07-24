@@ -2,25 +2,20 @@
 #include <WiFiUdp.h>
 #include <time.h>
 
+WiFiUDP udp;
+
+// configuration variables for nnetwork and udp
 const char* SSID = "BaerTaHome";            //  your network SSID (name)
 const char* WiFiPassword = "77478940435180061509";  // your network password (use for WPA, or use as key for WEP)
+const char* ip = "192.168.178.255"; //ip address of local pc
 //const char* ssid = "MtbAssistant"; //  your network SSID (name)
 //const char* pass = "b33c8e7879bd";    // your network password (use for WPA, or use as key for WEP)
+//const char* ip = "10.138.87.236";   //ip address of mobile phone with sim card
 
-//IP address to send UDP data to:
-// either use the ip address of the server or
-// a network broadcast address
-const char* udpAddress = "192.168.178.255";
-const int udpPort = 18600;
+const int udpPort = 18600;  // udp port
 //Are we currently connected?
 boolean connected = false;
 
-int fsrVoltage;  // the analog reading converted to voltage
-unsigned long fsrResistance;
-unsigned long fsrConductance;
-long fsrForce;
-
-WiFiUDP udp;
 
 void setup() {
   //Initialize serial and wait for port to open:
@@ -92,8 +87,7 @@ void loop() {
       }
     }
     // send a reply, to the IP address and port that sent us the packet we received
-    udp.beginPacket(udpAddress, udpPort);
-    //udp.beginPacket("10.133.132.215", localPort);
+    udp.beginPacket(ip, udpPort);
     udp.printf(sensorValues);
     udp.endPacket();
   }
