@@ -162,8 +162,8 @@ public class PieChartActivity extends AppCompatActivity {
     // NOTE: The order of the entries when being added to the entries array determines their position around the center of
     // the chart.
     for (int i = 0; i < 5; i++) {
-      entries.add(new PieEntry((float) (i == 0 ? perfect + 1 : i == 1 ? left + 1 : i == 2 ?
-          right + 1 : i == 3 ? top + 1 : bottom + 1), stats[i % stats.length]));
+      entries.add(new PieEntry((float) (i == 0 ? perfect : i == 1 ? left : i == 2 ? right : i == 3 ?
+          top : bottom), stats[i % stats.length]));
     }
     PieDataSet dataSet = new PieDataSet(entries, getString(R.string.stats));
     dataSet.setDrawIcons(false);

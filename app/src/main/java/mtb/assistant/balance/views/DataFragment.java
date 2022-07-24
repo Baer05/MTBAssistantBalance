@@ -94,6 +94,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
   private NavigationController navigationController;   // Belt navigation controller
   private long firstToHighTimestamp = 0;
   List<float[]> collected_data = new ArrayList<>();
+  double threshold = 1.9;
 
   // Formats
   private static final DecimalFormat integerPercentFormat = new DecimalFormat("#0 '%'");
@@ -214,7 +215,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         // after stop the tracking, go to the statistic activity and show statistic with measured data
         Intent intent = new Intent(getActivity(), PieChartActivity.class);
         intent.putExtra("collectedData", new Gson().toJson(collected_data));
-        intent.putExtra("threshold", 2.0);
+        intent.putExtra("threshold", threshold);
         intent.putExtra("fileName", fileName);
         startActivity(intent);
       } else if (checkIfFileExist()) {
@@ -614,7 +615,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
           long currentTimestamp = 0;
           for (int i = 0; i < values.length; i++) {
             floatArray[i] = Float.parseFloat(values[i]);
-            if (floatArray[i] > 3500) {
+            if (floatArray[i] > parent.threshold) {
               parent.firstToHighTimestamp = new Date().getTime();
               currentTimestamp = new Date().getTime();
               break;
