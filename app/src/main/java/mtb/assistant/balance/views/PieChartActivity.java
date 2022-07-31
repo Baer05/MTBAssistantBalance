@@ -69,11 +69,7 @@ public class PieChartActivity extends AppCompatActivity {
     // enable rotation of the chart by touch
     chart.setRotationEnabled(true);
     chart.setHighlightPerTapEnabled(true);
-    // chart.setUnit(" €");
-    // chart.setDrawUnitsInChart(true);
-    // add a selection listener
     chart.animateY(1400, Easing.EaseInOutQuad);
-    // chart.spin(2000, 0, 360);
     Legend l = chart.getLegend();
     l.setVerticalAlignment(Legend.LegendVerticalAlignment.TOP);
     l.setHorizontalAlignment(Legend.LegendHorizontalAlignment.RIGHT);
@@ -88,13 +84,9 @@ public class PieChartActivity extends AppCompatActivity {
     chart.setEntryLabelTextSize(12f);
     setData();
     Button onSave = findViewById(R.id.save_chart);
-    onSave.setOnClickListener(v -> {
-      saveToGallery(chart, getIntent().getExtras().getString("fileName"));
-    });
+    onSave.setOnClickListener(v -> saveToGallery(chart, getIntent().getExtras().getString("fileName")));
     Button goBack = findViewById(R.id.go_back);
-    goBack.setOnClickListener(v -> {
-      super.onBackPressed();
-    });
+    goBack.setOnClickListener(v -> super.onBackPressed());
   }
 
   private void setData() {
@@ -112,6 +104,8 @@ public class PieChartActivity extends AppCompatActivity {
     for (int i = 0; i < collectedData.size(); i++) {
       boolean isTop = false;
       boolean isBottom = false;
+      boolean isLeft = false;
+      boolean isRight = false;
       List<Float> values = new ArrayList<>();
       for (int x = 0; x < collectedData.get(i).length; x++) {
         float value = collectedData.get(i)[x];
@@ -136,7 +130,7 @@ public class PieChartActivity extends AppCompatActivity {
           values.get(2) > values.get(3) || values.get(2) > values.get(4) || values.get(2) > values.get(5)) {
         if (values.get(3) < threshold && values.get(4) < threshold && values.get(5) < threshold &&
             (values.get(0) > threshold || values.get(1) > threshold || values.get(2) > threshold)) {
-          left += 1;
+          isLeft = true;
         }
       }
       if (values.get(3) > values.get(0) || values.get(3) > values.get(1) || values.get(3) > values.get(2) ||
@@ -144,17 +138,15 @@ public class PieChartActivity extends AppCompatActivity {
           values.get(5) > values.get(0) || values.get(5) > values.get(1) || values.get(5) > values.get(2)) {
         if (values.get(0) < threshold && values.get(1) < threshold && values.get(2) < threshold &&
             (values.get(3) > threshold || values.get(4) > threshold || values.get(5) > threshold)) {
-          right += 1;
+          isRight = true;
         }
       }
 
-      if (isTop) {
-        top += 1;
-      }
-      if (isBottom) {
-        bottom += 1;
-      }
-      if (!isTop && !isBottom && left == 0 && right == 0) {
+      if(isLeft) left += 1;
+      if(isRight) right += 1;
+      if (isTop) top += 1;
+      if (isBottom) bottom += 1;
+      if (!isTop && !isBottom && !isLeft && !isRight) {
         perfect += 1;
       }
     }

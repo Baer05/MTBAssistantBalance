@@ -616,20 +616,22 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
           for (int i = 0; i < values.length; i++) {
             floatArray[i] = Float.parseFloat(values[i]);
             if (floatArray[i] > parent.threshold) {
-              parent.firstToHighTimestamp = new Date().getTime();
+              if (parent.firstToHighTimestamp == 0) {
+                parent.firstToHighTimestamp = new Date().getTime();
+              }
               currentTimestamp = new Date().getTime();
               break;
+            } else if (i == (values.length - 1)) {
+              parent.firstToHighTimestamp = 0;
             }
           }
-          if (currentTimestamp - parent.firstToHighTimestamp >= 1.5) {
+          // here check if the current timestamp is - the first timestamp when value was to height is greater thant two
+          if (currentTimestamp - parent.firstToHighTimestamp >= 2000) {
             if (parent.navigationController.getConnectionState() == BeltConnectionState.STATE_CONNECTED) {
               parent.navigationController.notifyWarning(true);
             }
             Log.d(TAG, "value over two seconds to high");
-          } else {
-            parent.firstToHighTimestamp = 0;
           }
-
         }
       }
     }

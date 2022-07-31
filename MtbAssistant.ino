@@ -6,7 +6,7 @@ WiFiUDP udp;
 
 // configuration variables for nnetwork and udp
 const char* SSID = "MtbAssistant"; //  your network SSID (name)
-const char* WiFiPassword = "4b5c4f9f55ae";    // your network password (use for WPA, or use as key for WEP)
+const char* WiFiPassword = "436bc93d961f";    // your network password (use for WPA, or use as key for WEP)
 const char* IP = "255.255.255.255";   //ip address of mobile phone with sim card
 
 const int udpPort = 18600;  // udp port
