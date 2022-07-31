@@ -621,8 +621,10 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
               break;
             }
           }
-          if (currentTimestamp - parent.firstToHighTimestamp >= 2) {
-            //parent.navigationController.notifyWarning(true);
+          if (currentTimestamp - parent.firstToHighTimestamp >= 1.5) {
+            if (parent.navigationController.getConnectionState() == BeltConnectionState.STATE_CONNECTED) {
+              parent.navigationController.notifyWarning(true);
+            }
             Log.d(TAG, "value over two seconds to high");
           } else {
             parent.firstToHighTimestamp = 0;
