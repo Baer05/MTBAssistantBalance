@@ -99,7 +99,6 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
   // Formats
   private static final DecimalFormat integerPercentFormat = new DecimalFormat("#0 '%'");
 
-
   /**
    * Get the instance of DataFragment
    *
@@ -214,9 +213,11 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         stopWriteDataThread();
         // after stop the tracking, go to the statistic activity and show statistic with measured data
         Intent intent = new Intent(getActivity(), PieChartActivity.class);
-        intent.putExtra("collectedData", new Gson().toJson(collected_data));
+        List<float[]> statisticData = collected_data;
+        intent.putExtra("collectedData", new Gson().toJson(statisticData));
         intent.putExtra("threshold", threshold);
         intent.putExtra("fileName", fileName);
+        collected_data.clear();
         startActivity(intent);
       } else if (checkIfFileExist()) {
         doToast(getString(R.string.file_already_exists));
@@ -367,7 +368,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
       if (navigationController.getConnectionState() == BeltConnectionState.STATE_DISCONNECTED) {
         try {
           navigationController.searchAndConnectBelt();
-          Thread.sleep(1000);
+          Thread.sleep(5000);
         } catch (InterruptedException e) {
           e.printStackTrace();
         }
@@ -390,7 +391,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
    */
   private boolean checkIfFileExist() {
     String csvName = fileName + ".csv";
-    Path path = Paths.get(getContext().getFilesDir().getAbsolutePath() +
+    Path path = Paths.get(requireContext().getFilesDir().getAbsolutePath() +
         "/MTBAssistantRecording/" + csvName);
     return Files.exists(path);
   }
@@ -404,7 +405,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
     try {
       if (!TextUtils.isEmpty(fileName)) {
         // first create file object for file placed at location
-        File dir = new File(getContext().getFilesDir(), "MTBAssistantRecording");
+        File dir = new File(requireContext().getFilesDir(), "MTBAssistantRecording");
         if (!dir.exists()) {
           boolean wasSuccessful = dir.mkdirs();
         }
@@ -456,6 +457,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
     isWriteThreadRunning = false;
     data_one.clear();
     data_two.clear();
+    firstToHighTimestamp = 0;
     writeThread.interrupt();
     mBinding.editCsvTitle.setFocusableInTouchMode(true);
     Objects.requireNonNull(mBinding.editCsvTitle.getText()).clear();
