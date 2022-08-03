@@ -8,7 +8,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -33,7 +32,6 @@ import mtb.assistant.balance.viewmodels.SensorViewModel;
  */
 public class HomeActivity extends AppCompatActivity {
 
-  private static final String TAG = HomeActivity.class.getSimpleName();
   // The code of request
   private static final int REQUEST_ENABLE_BLUETOOTH = 1001,
       REQUEST_PERMISSION_LOCATION = 1002,
@@ -92,7 +90,6 @@ public class HomeActivity extends AppCompatActivity {
   @Override
   protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
     super.onActivityResult(requestCode, resultCode, data);
-    Log.d(TAG, "onActivityResult() - requestCode = " + requestCode + ", resultCode = " + resultCode);
     if (requestCode == REQUEST_ENABLE_BLUETOOTH) {
       if (resultCode == RESULT_OK) checkBluetoothAndPermission();
       else
@@ -103,7 +100,6 @@ public class HomeActivity extends AppCompatActivity {
   @Override
   public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
     super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-    Log.d(TAG, "onRequestPermissionsResult() - requestCode = " + requestCode);
     if (requestCode == REQUEST_PERMISSION_LOCATION) {
       for (int i = 0; i < grantResults.length; i++) {
         if (permissions[i].equals(Manifest.permission.ACCESS_FINE_LOCATION)) {
@@ -191,11 +187,11 @@ public class HomeActivity extends AppCompatActivity {
   private boolean checkBluetoothAndPermission() {
     boolean isBluetoothEnabled = Utils.isBluetoothAdapterEnabled(this);
     boolean isBluetoothPermissionGranted = Utils.isBlePermissionGranted(this);
-    Log.d(TAG, String.valueOf(isBluetoothPermissionGranted));
     boolean isPermissionGranted = Utils.isLocationPermissionGranted(this);
     boolean isWritePermissionGranted = Utils.isWriteStoragePermissionGranted(this);
     if (isBluetoothEnabled) {
-      if (!isBluetoothPermissionGranted) Utils.requestBlePermission(this, BLUETOOTH_PERMISSION_REQUEST_CODE);
+      if (!isBluetoothPermissionGranted)
+        Utils.requestBlePermission(this, BLUETOOTH_PERMISSION_REQUEST_CODE);
       if (!isPermissionGranted) Utils.requestLocationPermission(this, REQUEST_PERMISSION_LOCATION);
       if (!isWritePermissionGranted)
         Utils.requestWriteExternalStoragePermission(this, REQUEST_PERMISSION_EXTERNAL_STORAGE);
@@ -203,7 +199,6 @@ public class HomeActivity extends AppCompatActivity {
       Utils.requestEnableBluetooth(this, REQUEST_ENABLE_BLUETOOTH);
     }
     boolean status = isBluetoothEnabled && isPermissionGranted;
-    Log.i(TAG, "checkBluetoothAndPermission() - " + status);
     mBluetoothViewModel.updateBluetoothEnableState(status);
     return status;
   }

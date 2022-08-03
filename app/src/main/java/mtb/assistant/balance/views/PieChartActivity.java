@@ -136,7 +136,7 @@ public class PieChartActivity extends AppCompatActivity {
               isBottom = true;
               break;
           }
-        } else if(noToHighValueFound) {
+        } else if (noToHighValueFound) {
           toHighValueFound = false;
           firstHighTimestamp = 0;
         }
