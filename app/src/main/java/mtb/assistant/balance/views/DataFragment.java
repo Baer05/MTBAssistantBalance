@@ -5,7 +5,6 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.text.TextUtils;
@@ -94,7 +93,9 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
   private NavigationController navigationController;   // Belt navigation controller
   private long firstToHighTimestamp = 0;
   List<float[]> collected_data = new ArrayList<>();
-  double threshold = 1.9;
+  List<Long> date_array = new ArrayList<>();
+  double threshold = 1.8;
+  int timeThreshold = 1500;
 
   // Formats
   private static final DecimalFormat integerPercentFormat = new DecimalFormat("#0 '%'");
@@ -214,10 +215,14 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         // after stop the tracking, go to the statistic activity and show statistic with measured data
         Intent intent = new Intent(getActivity(), PieChartActivity.class);
         List<float[]> statisticData = collected_data;
+        List<Long> timestampArray = date_array;
         intent.putExtra("collectedData", new Gson().toJson(statisticData));
+        intent.putExtra("timestampArray", new Gson().toJson(timestampArray));
         intent.putExtra("threshold", threshold);
+        intent.putExtra("timeThreshold", timeThreshold);
         intent.putExtra("fileName", fileName);
         collected_data.clear();
+        date_array.clear();
         startActivity(intent);
       } else if (checkIfFileExist()) {
         doToast(getString(R.string.file_already_exists));
@@ -595,6 +600,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
         floatArray[i] = Float.parseFloat(values[i]);
       }
       parent.collected_data.add(floatArray);
+      parent.date_array.add(new Date().getTime());
       if (parent.mDataList.size() > 0) {
         XsensDotData xsData = (XsensDotData) parent.mDataList.get(parent.mDataList.size() - 1).get(KEY_DATA);
         assert xsData != null;
@@ -628,7 +634,7 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
             }
           }
           // here check if the current timestamp is - the first timestamp when value was to height is greater thant two
-          if (currentTimestamp - parent.firstToHighTimestamp >= 2000) {
+          if (currentTimestamp - parent.firstToHighTimestamp >= parent.timeThreshold) {
             if (parent.navigationController.getConnectionState() == BeltConnectionState.STATE_CONNECTED) {
               parent.navigationController.notifyWarning(true);
             }

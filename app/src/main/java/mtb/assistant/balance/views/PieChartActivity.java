@@ -91,26 +91,39 @@ public class PieChartActivity extends AppCompatActivity {
 
   private void setData() {
     String collectedDataString = getIntent().getStringExtra("collectedData");
+    String timestampArrayString = getIntent().getStringExtra("timestampArray");
     Gson gson = new Gson();
     Type type = new TypeToken<List<float[]>>() {
     }.getType();
+    Type timestampType = new TypeToken<List<Long>>() {
+    }.getType();
     List<float[]> collectedData = gson.fromJson(collectedDataString, type);
+    List<Long> timestampArray = gson.fromJson(timestampArrayString, timestampType);
     double threshold = getIntent().getExtras().getDouble("threshold");
+    long timeThreshold = getIntent().getExtras().getLong("timeThreshold");
     int perfect = 0;
     int left = 0;
     int right = 0;
     int top = 0;
     int bottom = 0;
+    boolean toHighValueFound = false;
+    long firstHighTimestamp = 0;
     for (int i = 0; i < collectedData.size(); i++) {
       boolean isTop = false;
       boolean isBottom = false;
       boolean isLeft = false;
       boolean isRight = false;
+      boolean noToHighValueFound = true;
       List<Float> values = new ArrayList<>();
       for (int x = 0; x < collectedData.get(i).length; x++) {
         float value = collectedData.get(i)[x];
         values.add(value);
         if (value > threshold) {
+          if (!toHighValueFound) {
+            toHighValueFound = true;
+            noToHighValueFound = false;
+            firstHighTimestamp = timestampArray.get(i);
+          }
           switch (x) {
             case 0:
             case 1:
@@ -121,34 +134,41 @@ public class PieChartActivity extends AppCompatActivity {
             case 2:
             case 5:
               isBottom = true;
+              break;
+          }
+        } else if(noToHighValueFound) {
+          toHighValueFound = false;
+          firstHighTimestamp = 0;
+        }
+      }
+
+      if (firstHighTimestamp != 0 && (firstHighTimestamp - timestampArray.get(i) >= timeThreshold)) {
+        if (values.get(0) > values.get(3) || values.get(0) > values.get(4) || values.get(0) > values.get(5) ||
+            values.get(1) > values.get(3) || values.get(1) > values.get(4) || values.get(1) > values.get(5) ||
+            values.get(2) > values.get(3) || values.get(2) > values.get(4) || values.get(2) > values.get(5)) {
+          if (values.get(3) < threshold && values.get(4) < threshold && values.get(5) < threshold &&
+              (values.get(0) > threshold || values.get(1) > threshold || values.get(2) > threshold)) {
+            isLeft = true;
           }
         }
-      }
-
-      if (values.get(0) > values.get(3) || values.get(0) > values.get(4) || values.get(0) > values.get(5) ||
-          values.get(1) > values.get(3) || values.get(1) > values.get(4) || values.get(1) > values.get(5) ||
-          values.get(2) > values.get(3) || values.get(2) > values.get(4) || values.get(2) > values.get(5)) {
-        if (values.get(3) < threshold && values.get(4) < threshold && values.get(5) < threshold &&
-            (values.get(0) > threshold || values.get(1) > threshold || values.get(2) > threshold)) {
-          isLeft = true;
+        if (values.get(3) > values.get(0) || values.get(3) > values.get(1) || values.get(3) > values.get(2) ||
+            values.get(4) > values.get(0) || values.get(4) > values.get(1) || values.get(4) > values.get(2) ||
+            values.get(5) > values.get(0) || values.get(5) > values.get(1) || values.get(5) > values.get(2)) {
+          if (values.get(0) < threshold && values.get(1) < threshold && values.get(2) < threshold &&
+              (values.get(3) > threshold || values.get(4) > threshold || values.get(5) > threshold)) {
+            isRight = true;
+          }
         }
-      }
-      if (values.get(3) > values.get(0) || values.get(3) > values.get(1) || values.get(3) > values.get(2) ||
-          values.get(4) > values.get(0) || values.get(4) > values.get(1) || values.get(4) > values.get(2) ||
-          values.get(5) > values.get(0) || values.get(5) > values.get(1) || values.get(5) > values.get(2)) {
-        if (values.get(0) < threshold && values.get(1) < threshold && values.get(2) < threshold &&
-            (values.get(3) > threshold || values.get(4) > threshold || values.get(5) > threshold)) {
-          isRight = true;
-        }
-      }
-
-      if(isLeft) left += 1;
-      if(isRight) right += 1;
-      if (isTop) top += 1;
-      if (isBottom) bottom += 1;
-      if (!isTop && !isBottom && !isLeft && !isRight) {
+        if (isLeft) left += 1;
+        if (isRight) right += 1;
+        if (isTop) top += 1;
+        if (isBottom) bottom += 1;
+      } else {
         perfect += 1;
       }
+      /*if (!isTop && !isBottom && !isLeft && !isRight) {
+        perfect += 1;
+      }*/
     }
     ArrayList<PieEntry> entries = new ArrayList<>();
     // NOTE: The order of the entries when being added to the entries array determines their position around the center of
@@ -176,11 +196,10 @@ public class PieChartActivity extends AppCompatActivity {
       colors.add(c);
     colors.add(ColorTemplate.getHoloBlue());
     dataSet.setColors(colors);
-    //dataSet.setSelectionShift(0f);
     PieData data = new PieData(dataSet);
     data.setValueFormatter(new PercentFormatter());
     data.setValueTextSize(11f);
-    data.setValueTextColor(Color.WHITE);
+    data.setValueTextColor(Color.DKGRAY);
     data.setValueTypeface(tfLight);
     chart.setData(data);
     // undo all highlights
