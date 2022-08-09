@@ -94,7 +94,8 @@ public class DataFragment extends Fragment implements StreamingClickInterface, D
   private long firstToHighTimestamp = 0;
   List<float[]> collected_data = new ArrayList<>();
   List<Long> date_array = new ArrayList<>();
-  double threshold = 1.8;
+  double threshold = 1.4; // value for woman
+  //double threshold = 1.6; // value for man
   int timeThreshold = 1500;
 
   // Formats
